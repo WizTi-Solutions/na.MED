@@ -19,17 +19,20 @@
     <div class="logo">na.<span>MED</span></div>
     <h3>Área do Paciente e Profissional</h3>
     
-    <form id="loginForm">
-        <!-- ... seus inputs ... -->
-        <button type="submit">Entrar no Portal</button>
-        
-        <div style="text-align: center; margin-top: 15px;">
-            <span style="color: #64748b; font-size: 14px;">Novo por aqui? </span>
-            <a href="/paciente/criar-conta.html" style="color: #2563eb; font-size: 14px; font-weight: bold; text-decoration: none;">
-                Criar minha conta na.MED
-            </a>
-        </div>
-    </form>
+<form id="loginForm">
+    <!-- Estes campos são OBRIGATÓRIOS para o seu JavaScript funcionar -->
+    <input type="text" id="loginCpf" placeholder="Digite seu CPF (apenas números)" required maxlength="11">
+    <input type="password" id="loginPassword" placeholder="Digite sua senha" required>
+    
+    <button type="submit">Entrar no Portal</button>
+    
+    <div style="text-align: center; margin-top: 15px;">
+        <span style="color: #64748b; font-size: 14px;">Novo por aqui? </span>
+        <a href="/paciente/criar-conta.html" style="color: #2563eb; font-size: 14px; font-weight: bold; text-decoration: none;">
+            Criar minha conta na.MED
+        </a>
+    </div>
+</form>
 
     <!-- Mova o link para aqui, DENTRO do login-card -->
     <div style="text-align: center; margin-top: 20px;">
