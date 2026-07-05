@@ -1,14 +1,10 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // Agora ele lê a string completa que achamos
+  connectionString: process.env.DATABASE_URL, // O Vercel usará a string do Supabase aqui
   ssl: {
-    rejectUnauthorized: false // Obrigatório para o Supabase
+    rejectUnauthorized: false
   }
-});
-
-pool.on('connect', () => {
-  console.log('✅ Conectado ao banco de dados Supabase com sucesso!');
 });
 
 module.exports = {
