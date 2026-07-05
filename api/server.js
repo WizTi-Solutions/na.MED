@@ -51,4 +51,17 @@ app.get('/api/health', (req, res) => {
     }, 1000 * 60 * 60);
 //});
 
+// Exemplo de como implementar a rota de busca corretamente
+app.get('/api/auth/pesquisar-pacientes', async (req, res) => {
+    const { busca } = req.query;
+    try {
+        // Agora, o filtro 'paciente' é aplicado aqui no banco
+        const query = "SELECT * FROM users WHERE role = 'paciente' AND (name ILIKE $1 OR email ILIKE $1)";
+        const { rows } = await pool.query(query, [`%${busca}%`]);
+        res.json({ success: true, patients: rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = app;
