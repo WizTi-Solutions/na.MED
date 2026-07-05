@@ -502,7 +502,7 @@
                             <td><small style="color: #64748b;">${user.cpf || '---'}</small></td>
                             <td><span class="badge">${cargoLimpo.toUpperCase()}</span></td>
                             <td>
-<button class="btn-action btn-edit" onclick='prepararEdicaoProfissional(${JSON.stringify(p)})'>Editar</button>                                <button class="btn-action btn-delete" onclick="excluirFuncionario('${user.id}', '${user.name}')">Deletar</button>
+                            <button class="btn-action btn-edit" onclick='prepararEdicaoFuncionario(${JSON.stringify(user)})'>Editar</button>
                             </td>
                         </tr>
                     `;
@@ -774,8 +774,8 @@
                         <td><span class="badge">${p.role}</span></td>
                         <td style="color: #475569; font-size: 13px;">${vinculados || 'Nenhum vínculo'}</td>
                         <td>
-                            <button class="btn-action btn-edit" onclick='prepararEdicaoFuncionario(${JSON.stringify(user)})'>Editar</button>
-                            <button class="btn-action btn-delete" onclick="excluirProfissional('${p.id}')">Excluir</button>
+
+<button class="btn-action btn-edit" onclick='prepararEdicaoProfissional(${JSON.stringify(p)})'>Editar</button>                            <button class="btn-action btn-delete" onclick="excluirProfissional('${p.id}')">Excluir</button>
                         </td>
                     </tr>
                 `;
