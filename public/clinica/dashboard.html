@@ -433,20 +433,44 @@ consultasFiltradas.forEach(app => {
 
 async function salvarAgendamentoRapido() {
     const termoBusca = document.getElementById('campoBuscaPaciente').value.trim();
+    const horario = document.getElementById('campoHorario').value;
     
-    // Certifique-se de que a rota está exatamente como configuramos
+    // 1. Busca o paciente (que agora sabemos que funciona, pois o status é 200)
     const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termoBusca)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
 
-    if (!data.success || !data.patients || data.patients.length === 0) {
-        alert("Paciente não encontrado! Verifique o nome.");
+    if (!data.success || data.patients.length === 0) {
+        alert("Paciente não encontrado!");
         return;
     }
 
-    const paciente = data.patients[0]; // Agora ele deve encontrar o Pierre!
-    // ... continue com a lógica de salvamento que montamos antes
+    const paciente = data.patients[0]; // Pega o paciente retornado
+
+    // 2. Monta o agendamento
+    const payload = {
+        patient_id: paciente.id,
+        doctor_name: document.getElementById('filterDynamic').value,
+        specialty: document.getElementById('filterType').value === 'medico' ? 'Consulta' : 'Exame',
+        appointment_date: `${document.getElementById('filterDate').value}T${horario}:00`
+    };
+
+    // 3. Salva no servidor
+    const resAgendar = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+    });
+
+    const dataAgendar = await resAgendar.json();
+    if (dataAgendar.success) {
+        alert("Agendamento realizado com sucesso para " + paciente.name + "!");
+        document.getElementById('seuModalId').style.display = 'none';
+        carregarConsultasClinica(); // Atualiza a grade com o novo agendamento
+    } else {
+        alert("Erro ao salvar: " + dataAgendar.message);
+    }
 }
 
 </script>
