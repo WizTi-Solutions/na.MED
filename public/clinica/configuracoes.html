@@ -502,8 +502,7 @@
                             <td><small style="color: #64748b;">${user.cpf || '---'}</small></td>
                             <td><span class="badge">${cargoLimpo.toUpperCase()}</span></td>
                             <td>
-                                <button class="btn-action btn-edit" onclick='prepararEdicaoFuncionario(${JSON.stringify(user)})'>Editar</button>
-                                <button class="btn-action btn-delete" onclick="excluirFuncionario('${user.id}', '${user.name}')">Deletar</button>
+<button class="btn-action btn-edit" onclick='prepararEdicaoProfissional(${JSON.stringify(p)})'>Editar</button>                                <button class="btn-action btn-delete" onclick="excluirFuncionario('${user.id}', '${user.name}')">Deletar</button>
                             </td>
                         </tr>
                     `;
@@ -783,6 +782,28 @@
             });
         }
     }
+
+    // ✏️ PREPARAR FORMULÁRIO PARA EDIÇÃO DE PROFISSIONAL
+function prepararEdicaoProfissional(p) {
+    editProfessionalId = p.id;
+    
+    document.getElementById('profName').value = p.name;
+    document.getElementById('profRole').value = p.role;
+    
+    // Dispara o evento para mostrar os checkboxes corretos
+    document.getElementById('profRole').dispatchEvent(new Event('change'));
+    
+    // Marca os checkboxes que já estavam selecionados
+    document.querySelectorAll('.checkbox-group input').forEach(cb => {
+        if (p.specialties.includes(cb.value) || p.exams.includes(cb.value)) {
+            cb.checked = true;
+        } else {
+            cb.checked = false;
+        }
+    });
+    
+    document.querySelector('#formProfessional .btn-submit').innerText = 'Atualizar Profissional';
+}
 </script>
 </body>
 </html>
