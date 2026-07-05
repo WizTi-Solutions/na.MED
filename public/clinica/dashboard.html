@@ -383,8 +383,7 @@
                 gradeContainer.innerHTML += `
                     <div style="padding: 15px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; display: flex; flex-direction: column; justify-content: space-between; min-height: 90px;">
                         <strong style="font-size: 16px;">${horario}</strong>
-                        <button onclick="alert('Modal de agendamento rápido')" style="background: #16a34a; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 5px; width: 100%; text-align: center;">+ Agendar</button>
-                    </div>
+                        <button onclick="abrirModalAgendamento('${horario}')" style="background: #16a34a; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 5px; width: 100%; text-align: center;">+ Agendar</button>                    </div>
                 `;
             }
         });
@@ -418,6 +417,17 @@
         localStorage.removeItem('token');
         window.location.href = '/auth.html';
     });
+
+    function abrirModalAgendamento(horario) {
+    // Remova o alert('Modal de agendamento rápido');
+
+    // Adicione a lógica para abrir o modal de fato:
+    const modal = document.getElementById('seuModalId');
+    modal.style.display = 'block';
+
+    // Defina o horário clicado
+    document.getElementById('campoHorario').value = horario;
+}
 </script>
 </body>
 </html>
