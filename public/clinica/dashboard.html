@@ -434,6 +434,12 @@ consultasFiltradas.forEach(app => {
 async function salvarAgendamentoRapido() {
     const termoBusca = document.getElementById('campoBuscaPaciente').value.trim();
     const horario = document.getElementById('campoHorario').value;
+    const pacienteId = document.getElementById('campoBuscaPaciente').dataset.id;
+
+    if (!pacienteId) {
+        alert("Selecione um paciente da lista!");
+        return;
+    }
     
     // 1. Busca o paciente (que agora sabemos que funciona, pois o status é 200)
     const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termoBusca)}`, {
@@ -473,6 +479,43 @@ async function salvarAgendamentoRapido() {
     }
 }
 
+const inputBusca = document.getElementById('campoBuscaPaciente');
+const listaResultados = document.getElementById('listaResultados');
+
+inputBusca.addEventListener('input', async (e) => {
+    const termo = e.target.value.trim();
+    if (termo.length < 3) {
+        listaResultados.style.display = 'none';
+        return;
+    }
+
+    const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (data.success && data.patients.length > 0) {
+        listaResultados.innerHTML = '';
+        data.patients.forEach(p => {
+            const div = document.createElement('div');
+            div.style.padding = '10px';
+            div.style.cursor = 'pointer';
+            div.innerText = `${p.name} (${p.email})`; // Mostra nome e CPF/Email
+            div.onmouseover = () => div.style.background = '#f1f5f9';
+            div.onmouseout = () => div.style.background = 'white';
+            div.onclick = () => {
+                inputBusca.value = p.name; // Preenche o nome
+                inputBusca.dataset.id = p.id; // Guarda o ID oculto
+                listaResultados.style.display = 'none';
+            };
+            listaResultados.appendChild(div);
+        });
+        listaResultados.style.display = 'block';
+    } else {
+        listaResultados.style.display = 'none';
+    }
+});
+
 </script>
 <div id="seuModalId" class="modal-overlay" style="display: none;">
     <div class="modal-content">
@@ -495,6 +538,13 @@ async function salvarAgendamentoRapido() {
             Confirmar Agendamento
         </button>
     </div>
+    <div class="form-group" style="position: relative;">
+    <label>Buscar Paciente (Nome ou CPF):</label>
+    <input type="text" id="campoBuscaPaciente" placeholder="Digite o nome ou CPF..." 
+           autocomplete="off" style="padding:10px; border:1px solid #cbd5e1; border-radius:4px; width:100%;">
+    <!-- Esta div mostrará os resultados abaixo do input -->
+    <div id="listaResultados" style="position:absolute; width:100%; background:white; border:1px solid #cbd5e1; z-index:1000; display:none; max-height:200px; overflow-y:auto;"></div>
+</div>
 </div>
 </body>
 </html>
