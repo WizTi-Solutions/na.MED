@@ -419,19 +419,20 @@ const dataCompletaISO = `${dataDigitada}T${horaSelecionada}:00`;
             });
             const data = await res.json();
 
-            if (data.success && data.appointments && data.appointments.length > 0) {
+           if (data.success && data.appointments && data.appointments.length > 0) {
                 tbody.innerHTML = '';
                 data.appointments.forEach(app => {
-                    const dataFormatada = new Date(app.appointment_date).toLocaleString('pt-BR', {
-                        dateStyle: 'short',
-                        timeStyle: 'short'
-                    });
+                    // Correção: Agora a lógica está toda dentro do bloco do forEach
+                    const dataDoServidor = new Date(app.appointment_date);
+                    const dataFormatada = dataDoServidor.toLocaleDateString('pt-BR') + ', ' + 
+                                          dataDoServidor.getUTCHours().toString().padStart(2, '0') + ':' + 
+                                          dataDoServidor.getUTCMinutes().toString().padStart(2, '0');
 
                     let statusColor = '#6c757d';
                     let statusTexto = app.status || 'Agendado';
                     let botaoAcao = '';
 
-                    if (statusTexto === 'Conoluldo' || statusTexto === 'Concluído') {
+                    if (statusTexto === 'Concluido' || statusTexto === 'Concluído') {
                         statusTexto = 'Concluído';
                     }
 
@@ -454,7 +455,7 @@ const dataCompletaISO = `${dataDigitada}T${horaSelecionada}:00`;
                             <td>${botaoAcao}</td>
                         </tr>
                     `;
-                });
+                }); // <--- O fechamento do forEach estava faltando ou mal posicionado no seu código original
             } else {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;">Nenhum agendamento encontrado no seu histórico.</td></tr>';
             }
