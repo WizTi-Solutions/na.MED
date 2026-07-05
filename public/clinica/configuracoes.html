@@ -475,43 +475,34 @@
     }
 
     // ================= GERENCIAMENTO DE PERMISSÕES E ACESSOS REAIS =================
-    async function carregarPainelPermissoes() {
-        try {
-            const res = await fetch('/api/config/system-users', { 
-    headers: { 'Authorization': `Bearer ${token}` } 
-});
-            const data = await res.json();
-            
-            const tbodyEquipe = document.getElementById('tbodyEquipeSistema');
-            
-            if (!res.ok) {
-                console.error("💥 Servidor recusou a chamada de usuários:", data.message);
-                tbodyEquipe.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Erro de autenticação ao carregar equipe.</td></tr>';
-                return;
-            }
-            
-            if (data.success && data.users) {
-                tbodyEquipe.innerHTML = ''; 
-                
-                data.users.forEach(user => {
-                    const cargoLimpo = user.role ? user.role.toLowerCase().trim() : '';
-                    
-                    tbodyEquipe.innerHTML += `
-                        <tr>
-                            <td><strong>${user.name}</strong></td>
-                            <td><small style="color: #64748b;">${user.cpf || '---'}</small></td>
-                            <td><span class="badge">${cargoLimpo.toUpperCase()}</span></td>
-                            <td>
+async function carregarPainelPermissoes() {
+    try {
+        const res = await fetch('/api/config/system-users', { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        const data = await res.json();
+        const tbodyEquipe = document.getElementById('tbodyEquipeSistema');
+        
+        if (data.success && data.users) {
+            tbodyEquipe.innerHTML = ''; 
+            data.users.forEach(user => {
+                const cargoLimpo = user.role ? user.role.toLowerCase().trim() : '';
+                tbodyEquipe.innerHTML += `
+                    <tr>
+                        <td><strong>${user.name}</strong></td>
+                        <td><small style="color: #64748b;">${user.cpf || '---'}</small></td>
+                        <td><span class="badge">${cargoLimpo.toUpperCase()}</span></td>
+                        <td>
                             <button class="btn-action btn-edit" onclick='prepararEdicaoFuncionario(${JSON.stringify(user)})'>Editar</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-        } catch (err) {
-            console.error('Erro ao popular painel de acessos:', err);
+                        </td>
+                    </tr>
+                `;
+            });
         }
+    } catch (err) {
+        console.error('Erro ao popular painel de acessos:', err);
     }
+}
 
     // ✏️ PREPARAR FORMULÁRIO PARA EDIÇÃO
     function prepararEdicaoFuncionario(user) {
@@ -758,30 +749,29 @@
             });
         }
     }
-
-    async function carregarProfissionais() {
-        const res = await fetch('/api/catalog/professionals');
-        const data = await res.json();
-        const tbody = document.getElementById('tbodyProfessionals');
-        tbody.innerHTML = '';
-        
-        if (data.success) {
-            data.professionals.forEach(p => {
-                let vinculados = p.role === 'medico' ? p.specialties.join(', ') : p.exams.join(', ');
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${p.name}</strong></td>
-                        <td><span class="badge">${p.role}</span></td>
-                        <td style="color: #475569; font-size: 13px;">${vinculados || 'Nenhum vínculo'}</td>
-                        <td>
-
-<button class="btn-action btn-edit" onclick='prepararEdicaoProfissional(${JSON.stringify(p)})'>Editar</button>                            <button class="btn-action btn-delete" onclick="excluirProfissional('${p.id}')">Excluir</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+async function carregarProfissionais() {
+    const res = await fetch('/api/catalog/professionals');
+    const data = await res.json();
+    const tbody = document.getElementById('tbodyProfessionals');
+    tbody.innerHTML = '';
+    
+    if (data.success) {
+        data.professionals.forEach(p => {
+            let vinculados = p.role === 'medico' ? p.specialties.join(', ') : p.exams.join(', ');
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td><span class="badge">${p.role}</span></td>
+                    <td style="color: #475569; font-size: 13px;">${vinculados || 'Nenhum vínculo'}</td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick='prepararEdicaoProfissional(${JSON.stringify(p)})'>Editar</button>
+                        <button class="btn-action btn-delete" onclick="excluirProfissional('${p.id}')">Excluir</button>
+                    </td>
+                </tr>
+            `;
+        });
     }
+}
 
     // ✏️ PREPARAR FORMULÁRIO PARA EDIÇÃO DE PROFISSIONAL
 function prepararEdicaoProfissional(p) {
