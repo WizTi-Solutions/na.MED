@@ -321,7 +321,15 @@
 
     async function buscarHorariosLivres() {
         const container = document.getElementById('containerTimeSlots');
-        const dataDigitada = document.getElementById('bookingDate').value;
+        const dataDigitada = document.getElementById('bookingDate').value; // ex: "2026-07-06"
+const horaSelecionada = "08:00"; // O valor que veio do seu botão
+
+// COMBINAÇÃO SEGURA:
+// Evite usar 'new Date()' que tenta calcular fuso horário automaticamente.
+// Monte a string manualmente no formato que o seu banco espera:
+const dataCompletaISO = `${dataDigitada}T${horaSelecionada}:00`; 
+
+// Agora envie 'dataCompletaISO' no seu fetch
         const selectOption = document.getElementById('bookingOption');
         const doctorName = document.getElementById('bookingProfessional').value;
 
