@@ -4,121 +4,554 @@
     <meta charset="UTF-8">
     <title>Painel da Clínica - na.MED</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .header-dash { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; }
+        .header-dash { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
         .btn-logout { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         
-        .filter-bar { display: flex; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; align-items: center; flex-wrap: wrap; }
+        /* Filtros */
+        .filter-bar { display: flex; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 6px; margin-top: 20px; border: 1px solid #e2e8f0; align-items: center; flex-wrap: wrap; }
         .filter-group { display: flex; flex-direction: column; gap: 5px; }
         .filter-group label { font-size: 12px; font-weight: bold; color: #475569; }
         .filter-group input, .filter-group select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; min-width: 180px; }
 
         .table-appointments { width: 100%; border-collapse: collapse; margin-top: 25px; }
         .table-appointments th, .table-appointments td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .table-appointments th { background: #f8fafc; color: #475569; }
         .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 12px; font-weight: bold; }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .close-modal { float: right; font-size: 24px; cursor: pointer; }
+        .link-paciente { color: #2563eb; text-decoration: none; font-weight: bold; cursor: pointer; }
+        .link-paciente:hover { text-decoration: underline; }
+
+        /* 🏛️ ESTILOS DO MODAL DO PRONTUÁRIO DO PACIENTE */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 100%; max-width: 650px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; max-height: 85vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #64748b; }
+        .close-modal:hover { color: #1e293b; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 🏢 CABEÇALHO ÚNICO DA CLÍNICA INTEGRADO -->
     <div class="header-dash">
         <h2>🏥 Painel de Controle - Clínica</h2>
-        <button id="btnLogout" class="btn-logout">Sair</button>
+        <div>
+            <!-- Botão de Pesquisa de Pacientes -->
+            <a href="pacientes.html" style="text-decoration: none; background: #16a34a; color: white; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-users"></i> Pesquisar Pacientes
+            </a>
+            <!-- Botão de Configurações Administrativas e de Equipe -->
+            <a href="configuracoes.html" style="text-decoration: none; background: #2563eb; color: white; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-gear"></i> Configurações & Equipe
+            </a>
+        </div>
+        <button id="btnLogout" class="btn-logout">Sair do Sistema</button>
     </div>
 
+    <!-- 📅 BARRA DE FILTROS DINÂMICA -->
     <div class="filter-bar">
         <div class="filter-group">
-            <label>Filtrar por Data:</label>
+            <label for="filterDate">Filtrar por Data:</label>
             <input type="date" id="filterDate">
         </div>
+        
         <div class="filter-group">
-            <label>Tipo:</label>
-            <select id="filterType"><option value="medico">Consultas</option><option value="exame">Exames</option></select>
+            <label for="filterType">Tipo de Atendimento:</label>
+            <select id="filterType">
+                <option value="medico">🩺 Consultas Médicas</option>
+                <option value="exame">🔬 Exames e Procedimentos</option>
+            </select>
         </div>
+
         <div class="filter-group">
-            <label id="labelDynamicSelect">Profissional:</label>
-            <select id="filterDynamic"><option value="">Selecione...</option></select>
+            <label id="labelDynamicSelect" for="filterDynamic">Médico / Profissional:</label>
+            <select id="filterDynamic">
+                <option value="">Selecione o Tipo primeiro...</option>
+            </select>
         </div>
-        <button id="btnClearFilters" style="margin-top:18px; padding:8px;">Limpar</button>
+
+        <button id="btnClearFilters" style="margin-top: 18px; padding: 8px 12px; background: #64748b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Limpar Filtros</button>
     </div>
     
-    <table class="table-appointments"><tbody id="clinicAppointmentsTable"></tbody></table>
+    <table class="table-appointments">
+        <thead>
+            <tr>
+                <th>Paciente (Clique para abrir)</th>
+                <th>Médico / Técnico</th>
+                <th>Especialidade / Exame</th>
+                <th>Data/Hora</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="clinicAppointmentsTable">
+            <tr>
+                <td colspan="5" style="text-align: center; color: #64748b;">Carregando agendamentos...</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
-<!-- Modal Agendamento -->
-<div id="seuModalId" class="modal-overlay">
+<!-- ================= 🏛️ MODAL: PRONTUÁRIO E GESTÃO DE LAUDOS ================= -->
+<div class="modal-overlay" id="modalProntuario">
     <div class="modal-content">
-        <span class="close-modal" onclick="document.getElementById('seuModalId').style.display='none'">&times;</span>
-        <h3>🗓️ Agendamento Rápido</h3>
-        <div class="form-group">
-            <label>Horário:</label>
-            <input type="text" id="campoHorario" readonly style="background:#f1f5f9; padding:10px; width:100%;">
+        <span class="close-modal" onclick="fecharProntuario()">&times;</span>
+        <h2 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">📋 Prontuário Integrado</h2>
+        
+        <p style="font-size: 15px; color: #334155; margin-bottom: 20px;">
+            <strong>Paciente:</strong> <span id="modalNomePaciente" style="color:#2563eb;">-</span><br>
+            <small style="color: #64748b;">ID do Registro: <span id="modalIdPaciente">-</span></small>
+        </p>
+
+        <!-- 📑 SUB-SEÇÃO 1: DOCUMENTOS JÁ ANEXADOS -->
+        <h4 style="color: #475569; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">📄 Laudos e Arquivos Digitais Liberados</h4>
+        <div style="max-height: 180px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 25px;">
+            <table style="width:100%; border-collapse: collapse; font-size: 13px;" id="tableExamesAnexados">
+                <thead>
+                    <tr style="text-align: left; color: #475569;">
+                        <th>Nome do Arquivo</th>
+                        <th>Data Envio</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyLaudosExistentes">
+                    <tr><td colspan="2" style="color: #94a3b8; font-style: italic;">Nenhum arquivo anexado para este paciente.</td></tr>
+                </tbody>
+            </table>
         </div>
-        <div class="form-group" style="position: relative;">
-            <label>Paciente:</label>
-            <input type="text" id="campoBuscaPaciente" placeholder="Digite nome ou CPF..." style="padding:10px; width:100%;">
-            <div id="listaResultados" style="position:absolute; top: 100%; width: 100%; background:white; border:1px solid #cbd5e1; display:none; z-index:1000;"></div>
-        </div>
-        <button onclick="salvarAgendamentoRapido()" style="width:100%; padding:12px; background:#16a34a; color:white; border:none; cursor:pointer;">Confirmar</button>
+
+        <!-- 📤 SUB-SEÇÃO 2: FORMULÁRIO DE NOVO UPLOAD -->
+        <h4 style="color: #475569; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">📤 Anexar Novo PDF ao Histórico</h4>
+        <form id="formUploadDocument" enctype="multipart/form-data">
+            <input type="hidden" id="uploadPatientId">
+            
+            <div class="form-row">
+                <div class="filter-group">
+                    <label style="font-size: 11px; font-weight: bold; color: #475569;">Vincular Agendamento (Opcional):</label>
+                    <select id="uploadAppointmentId" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; min-width: 100%;">
+                        <option value="">Documento Geral (Sem vínculo)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label style="font-size: 11px; font-weight: bold; color: #475569;">Nome de Exibição do Exame:</label>
+                    <input type="text" id="uploadFileName" placeholder="Ex: Laudo Pediatria" required style="padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                </div>
+            </div>
+
+            <div class="filter-group" style="margin-bottom: 20px;">
+                <label style="font-size: 11px; font-weight: bold; color: #475569;">Selecione o Arquivo PDF:</label>
+                <input type="file" id="uploadFileFile" accept="application/pdf" required style="padding: 5px;">
+            </div>
+
+            <button type="submit" style="background: #16a34a; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px;">
+                💾 Confirmar Upload e Liberar para o Paciente
+            </button>
+        </form>
     </div>
 </div>
 
 <script>
     const token = localStorage.getItem('token');
-    
+    if (!token) {
+        alert('Acesso negado!');
+        window.location.href = '/auth.html';
+    }
+
+    let todasConsultas = [];
+    let catalogMedicos = [];
+    let catalogExames = [];
+
     document.addEventListener('DOMContentLoaded', async () => {
-        // Inicializações principais
         await carregarCatalogosIniciais();
         alternarSelectDinamico();
         await carregarConsultasClinica();
+    });
 
-        // Configura busca de paciente com segurança
-        const inputBusca = document.getElementById('campoBuscaPaciente');
-        const listaResultados = document.getElementById('listaResultados');
+    async function carregarCatalogosIniciais() {
+        try {
+            const resProf = await fetch('/api/catalog/professionals');
+            const dataProf = await resProf.json();
+            if (dataProf.success) {
+                catalogMedicos = dataProf.professionals.filter(p => p.role === 'medico');
+            }
 
-        if (inputBusca) {
-            inputBusca.addEventListener('input', async (e) => {
-                const termo = e.target.value.trim();
-                if (termo.length < 3) { listaResultados.style.display = 'none'; return; }
+            const resExams = await fetch('/api/catalog/exam-types');
+            const dataExams = await resExams.json();
+            if (dataExams.success) {
+                catalogExames = dataExams.examTypes;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar catálogos:', error);
+        }
+    }
 
-                const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
+    function alternarSelectDinamico() {
+        const typeSelected = document.getElementById('filterType').value;
+        const label = document.getElementById('labelDynamicSelect');
+        const selectDynamic = document.getElementById('filterDynamic');
 
-                if (data.success && data.patients.length > 0) {
-                    listaResultados.innerHTML = '';
-                    data.patients.forEach(p => {
-                        const div = document.createElement('div');
-                        div.style.padding = '10px'; div.style.cursor = 'pointer';
-                        div.innerText = `${p.name}`;
-                        div.onclick = () => {
-                            inputBusca.value = p.name;
-                            inputBusca.dataset.id = p.id;
-                            listaResultados.style.display = 'none';
-                        };
-                        listaResultados.appendChild(div);
-                    });
-                    listaResultados.style.display = 'block';
-                }
+        selectDynamic.innerHTML = '<option value="">Todos</option>';
+
+        if (typeSelected === 'medico') {
+            label.innerText = 'Médico / Profissional:';
+            catalogMedicos.forEach(med => {
+                selectDynamic.innerHTML += `<option value="${med.name}">${med.name}</option>`;
             });
+        } else {
+            label.innerText = 'Procedimento / Exame:';
+            catalogExames.forEach(exam => {
+                selectDynamic.innerHTML += `<option value="${exam.name}">${exam.name}</option>`;
+            });
+        }
+        renderizarTabela(todasConsultas);
+    }
+
+    async function carregarConsultasClinica() {
+        const tbody = document.getElementById('clinicAppointmentsTable');
+        const dataSelecionada = document.getElementById('filterDate').value;
+        
+        try {
+            let url = '/api/appointments/all-appointments';
+            if (dataSelecionada) { url += `?data=${dataSelecionada}`; }
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                todasConsultas = data.appointments;
+                renderizarTabela(todasConsultas);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Erro ao carregar dados.</td></tr>';
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    function renderizarTabela(consultas) {
+        const tbody = document.getElementById('clinicAppointmentsTable');
+        const tipoFiltro = document.getElementById('filterType').value;
+        const valorFiltro = document.getElementById('filterDynamic').value;
+
+        let consultasFiltradas = consultas;
+
+        if (valorFiltro) {
+            if (tipoFiltro === 'medico') {
+                consultasFiltradas = consultasFiltradas.filter(app => app.doctor_name === valorFiltro);
+            } else {
+                consultasFiltradas = consultasFiltradas.filter(app => app.specialty === valorFiltro);
+            }
+        }
+
+        gerarGradeDeHorarios(consultasFiltradas);
+
+        if (consultasFiltradas.length > 0) {
+            tbody.innerHTML = '';
+consultasFiltradas.forEach(app => {
+    // CORREÇÃO: Usando getUTCHours e getUTCMinutes para ignorar o deslocamento de fuso
+    const dataDoServidor = new Date(app.appointment_date);
+    const dataFormatada = dataDoServidor.toLocaleDateString('pt-BR') + ', ' + 
+                          dataDoServidor.getUTCHours().toString().padStart(2, '0') + ':' + 
+                          dataDoServidor.getUTCMinutes().toString().padStart(2, '0');
+
+    let statusColor = app.status === 'Agendado' ? '#28a745' : '#6c757d';
+
+    tbody.innerHTML += `
+        <tr>
+            <td><a class="link-paciente" onclick="abrirProntuario('${app.patient_id}', '${app.patient_name}')">👤 ${app.patient_name}</a></td>
+            <td>${app.doctor_name}</td>
+            <td>${app.specialty}</td>
+            <td>🗓️ ${dataFormatada}</td>
+            <td><span class="badge" style="background: ${statusColor} !important; color: white;">${app.status || 'Agendado'}</span></td>
+        </tr>
+    `;
+});
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;">Nenhum agendamento encontrado para este filtro.</td></tr>';
+        }
+    }
+
+    async function abrirProntuario(patientId, patientName) {
+        document.getElementById('modalNomePaciente').innerText = patientName;
+        document.getElementById('modalIdPaciente').innerText = patientId;
+        document.getElementById('uploadPatientId').value = patientId;
+
+        const selectApp = document.getElementById('uploadAppointmentId');
+        selectApp.innerHTML = '<option value="">Documento Geral (Sem vínculo)</option>';
+        
+        const consultasDoPaciente = todasConsultas.filter(app => app.patient_id === patientId);
+        consultasDoPaciente.forEach(app => {
+            const dataTxt = new Date(app.appointment_date).toLocaleDateString('pt-BR');
+            selectApp.innerHTML += `<option value="${app.id}">${dataTxt} - ${app.specialty} (${app.doctor_name})</option>`;
+        });
+
+        const tbodyLaudos = document.getElementById('tbodyLaudosExistentes');
+        tbodyLaudos.innerHTML = '<tr><td colspan="2" style="color: #94a3b8;">Consultando laudos...</td></tr>';
+
+        try {
+            tbodyLaudos.innerHTML = '';
+            tbodyLaudos.innerHTML = '<tr><td colspan="2" style="color: #64748b; font-style: italic;">Pronto para receber novos uploads.</td></tr>';
+        } catch (err) {
+            tbodyLaudos.innerHTML = '<tr><td colspan="2" style="color: red;">Erro ao listar arquivos.</td></tr>';
+        }
+
+        document.getElementById('modalProntuario').style.display = 'flex';
+    }
+
+    function fecharProntuario() {
+        document.getElementById('modalProntuario').style.display = 'none';
+        document.getElementById('formUploadDocument').reset();
+    }
+
+    document.getElementById('formUploadDocument').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const patientId = document.getElementById('uploadPatientId').value;
+        const appointmentId = document.getElementById('uploadAppointmentId').value;
+        const fileName = document.getElementById('uploadFileName').value;
+        const fileInput = document.getElementById('uploadFileFile');
+
+        const formData = new FormData();
+        formData.append('patient_id', patientId);
+        
+        if (appointmentId && appointmentId.trim() !== "") {
+            formData.append('appointment_id', appointmentId);
+        }
+        
+        formData.append('file_name', fileName);
+        formData.append('laudo', fileInput.files[0]);
+
+        try {
+            const response = await fetch('/api/appointments/upload-document', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('🎉 Laudo anexado e disponibilizado com sucesso!');
+                fecharProntuario();
+                await carregarConsultasClinica();
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro de conexão.');
         }
     });
 
-    // ... [Mantenha suas funções existentes de carregarConsultasClinica, renderizarTabela, etc] ...
-
-    async function salvarAgendamentoRapido() {
-        const pacienteId = document.getElementById('campoBuscaPaciente').dataset.id;
-        const horario = document.getElementById('campoHorario').value;
-        if (!pacienteId) { alert("Selecione um paciente!"); return; }
+    function gerarGradeDeHorarios(consultasDoDia) {
+        const horariosTrabalho = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+        let gradeContainer = document.getElementById('gridHorarios');
         
-        // ... [Lógica de POST para /api/appointments] ...
+        if (!gradeContainer) {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div class="title-section" style="margin-top:30px; font-weight: bold; color: #1e293b;">⏱️ Grade de Horários Operacionais</div>
+                <div id="gridHorarios" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; margin-bottom: 30px;"></div>
+            `;
+            document.querySelector('.table-appointments').before(div);
+            gradeContainer = document.getElementById('gridHorarios');
+        }
+
+        gradeContainer.innerHTML = ''; 
+
+        horariosTrabalho.forEach(horario => {
+            const consultaOcupada = consultasDoDia.find(app => {
+                const horaApp = new Date(app.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                return horaApp === horario;
+            });
+
+            if (consultaOcupada) {
+                gradeContainer.innerHTML += `
+                    <div style="padding: 15px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; color: #991b1b; display: flex; flex-direction: column; justify-content: space-between; min-height: 90px;">
+                        <div>
+                            <strong style="font-size: 16px;">${horario}</strong><br>
+                            <span style="font-size: 12px;">👤 ${consultaOcupada.patient_name}</span><br>
+                            <span style="font-size: 11px; color: #b91c1c;">📋 ${consultaOcupada.specialty}</span>
+                        </div>
+                        <div style="margin-top: 10px; display: flex; gap: 8px;">
+                            <button onclick="excluirAgendamento('${consultaOcupada.id}')" style="background: #dc2626; color: white; border: none; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 11px;">Excluir</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                gradeContainer.innerHTML += `
+                    <div style="padding: 15px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; display: flex; flex-direction: column; justify-content: space-between; min-height: 90px;">
+                        <strong style="font-size: 16px;">${horario}</strong>
+                        <button onclick="abrirModalAgendamento('${horario}')" style="background: #16a34a; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 5px; width: 100%; text-align: center;">+ Agendar</button>                    </div>
+                `;
+            }
+        });
     }
+
+    async function excluirAgendamento(id) {
+        if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
+            try {
+                const response = await fetch(`/api/appointments/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) { carregarConsultasClinica(); }
+            } catch (error) { console.error(error); }
+        }
+    }
+
+    document.getElementById('filterDate').addEventListener('change', carregarConsultasClinica);
+    document.getElementById('filterType').addEventListener('change', alternarSelectDinamico);
+    document.getElementById('filterDynamic').addEventListener('change', () => renderizarTabela(todasConsultas));
+
+    document.getElementById('btnClearFilters').addEventListener('click', () => {
+        document.getElementById('filterDate').value = '';
+        document.getElementById('filterType').value = 'medico';
+        alternarSelectDinamico();
+        carregarConsultasClinica();
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = '/auth.html';
+    });
+
+    function abrirModalAgendamento(horario) {
+    // Remova o alert('Modal de agendamento rápido');
+
+    // Adicione a lógica para abrir o modal de fato:
+    const modal = document.getElementById('seuModalId');
+    modal.style.display = 'block';
+
+    // Defina o horário clicado
+    document.getElementById('campoHorario').value = horario;
+}
+
+async function salvarAgendamentoRapido() {
+    const termoBusca = document.getElementById('campoBuscaPaciente').value.trim();
+    const horario = document.getElementById('campoHorario').value;
+    const pacienteId = document.getElementById('campoBuscaPaciente').dataset.id;
+
+    if (!pacienteId) {
+        alert("Selecione um paciente da lista!");
+        return;
+    }
+    
+    // 1. Busca o paciente (que agora sabemos que funciona, pois o status é 200)
+    const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termoBusca)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (!data.success || data.patients.length === 0) {
+        alert("Paciente não encontrado!");
+        return;
+    }
+
+    const paciente = data.patients[0]; // Pega o paciente retornado
+
+    // 2. Monta o agendamento
+    const payload = {
+        patient_id: paciente.id,
+        doctor_name: document.getElementById('filterDynamic').value,
+        specialty: document.getElementById('filterType').value === 'medico' ? 'Consulta' : 'Exame',
+        appointment_date: `${document.getElementById('filterDate').value}T${horario}:00`
+    };
+
+    // 3. Salva no servidor
+    const resAgendar = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+    });
+
+    const dataAgendar = await resAgendar.json();
+    if (dataAgendar.success) {
+        alert("Agendamento realizado com sucesso para " + paciente.name + "!");
+        document.getElementById('seuModalId').style.display = 'none';
+        carregarConsultasClinica(); // Atualiza a grade com o novo agendamento
+    } else {
+        alert("Erro ao salvar: " + dataAgendar.message);
+    }
+}
+
+const inputBusca = document.getElementById('campoBuscaPaciente');
+const listaResultados = document.getElementById('listaResultados');
+
+inputBusca.addEventListener('input', async (e) => {
+    const termo = e.target.value.trim();
+    if (termo.length < 3) {
+        listaResultados.style.display = 'none';
+        return;
+    }
+
+    const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (data.success && data.patients.length > 0) {
+        listaResultados.innerHTML = '';
+        data.patients.forEach(p => {
+            const div = document.createElement('div');
+            div.style.padding = '10px';
+            div.style.cursor = 'pointer';
+            div.innerText = `${p.name} (${p.email})`; // Mostra nome e CPF/Email
+            div.onmouseover = () => div.style.background = '#f1f5f9';
+            div.onmouseout = () => div.style.background = 'white';
+            div.onclick = () => {
+                inputBusca.value = p.name; // Preenche o nome
+                inputBusca.dataset.id = p.id; // Guarda o ID oculto
+                listaResultados.style.display = 'none';
+            };
+            listaResultados.appendChild(div);
+        });
+        listaResultados.style.display = 'block';
+    } else {
+        listaResultados.style.display = 'none';
+    }
+});
+
 </script>
+<div id="seuModalId" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal" onclick="document.getElementById('seuModalId').style.display='none'">&times;</span>
+        <h3 style="margin-top:0; color:#1e293b;">🗓️ Agendamento Rápido</h3>
+        
+        <div class="form-group">
+            <label>Horário Selecionado:</label>
+            <input type="text" id="campoHorario" readonly style="background:#f1f5f9;">
+        </div>
+
+        <div class="form-group">
+            <label>Buscar Paciente (Nome ou CPF):</label>
+            <input type="text" id="campoBuscaPaciente" placeholder="Digite o nome do paciente..." 
+                   style="padding:10px; border:1px solid #cbd5e1; border-radius:4px;">
+        </div>
+
+        <button onclick="salvarAgendamentoRapido()" 
+                style="background:#16a34a; color:white; border:none; padding:12px; width:100%; border-radius:4px; font-weight:bold; cursor:pointer;">
+            Confirmar Agendamento
+        </button>
+    </div>
+ <div class="form-group" style="position: relative;">
+    <label>Buscar Paciente (Nome ou CPF):</label>
+    <input type="text" id="campoBuscaPaciente" placeholder="Digite o nome ou CPF..." 
+           autocomplete="off" style="padding:10px; border:1px solid #cbd5e1; border-radius:4px; width:100%;">
+    <!-- A lista de resultados deve ficar DENTRO da mesma div do input -->
+    <div id="listaResultados" style="position:absolute; width:100%; background:white; border:1px solid #cbd5e1; z-index:1000; display:none; max-height:200px; overflow-y:auto;"></div>
+</div>
+
+<button onclick="salvarAgendamentoRapido()" 
+        style="background:#16a34a; color:white; border:none; padding:12px; width:100%; border-radius:4px; font-weight:bold; cursor:pointer; margin-top: 15px;">
+    Confirmar Agendamento
+</button>
+</div> <!-- Fecha a modal-content -->
+</div> <!-- Fecha a modal-overlay -->
+
 </body>
 </html>
