@@ -2,7 +2,7 @@ require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
 const path = require('path');
-const db = require('./src/config/database');
+const db = require('../src/config/database');
 
 const app = express(); // 🎯 Agora o app é inicializado antes de qualquer uso!
 app.use(cors());

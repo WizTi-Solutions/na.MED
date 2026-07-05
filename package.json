@@ -2,10 +2,11 @@
   "name": "named-portal",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
-  "scripts": {
-    "dev": "nodemon server.js"
-  },
+  "main": "api/server.js",
+ "scripts": {
+  "start": "node api/server.js",
+  "dev": "nodemon api/server.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
