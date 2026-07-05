@@ -251,23 +251,25 @@
 
         if (consultasFiltradas.length > 0) {
             tbody.innerHTML = '';
-            consultasFiltradas.forEach(app => {
-                const dataFormatada = new Date(app.appointment_date).toLocaleString('pt-BR', {
-                    dateStyle: 'short', timeStyle: 'short'
-                });
+consultasFiltradas.forEach(app => {
+    // CORREÇÃO: Usando getUTCHours e getUTCMinutes para ignorar o deslocamento de fuso
+    const dataDoServidor = new Date(app.appointment_date);
+    const dataFormatada = dataDoServidor.toLocaleDateString('pt-BR') + ', ' + 
+                          dataDoServidor.getUTCHours().toString().padStart(2, '0') + ':' + 
+                          dataDoServidor.getUTCMinutes().toString().padStart(2, '0');
 
-                let statusColor = app.status === 'Agendado' ? '#28a745' : '#6c757d';
+    let statusColor = app.status === 'Agendado' ? '#28a745' : '#6c757d';
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td><a class="link-paciente" onclick="abrirProntuario('${app.patient_id}', '${app.patient_name}')">👤 ${app.patient_name}</a></td>
-                        <td>${app.doctor_name}</td>
-                        <td>${app.specialty}</td>
-                        <td>🗓️ ${dataFormatada}</td>
-                        <td><span class="badge" style="background: ${statusColor} !important; color: white;">${app.status || 'Agendado'}</span></td>
-                    </tr>
-                `;
-            });
+    tbody.innerHTML += `
+        <tr>
+            <td><a class="link-paciente" onclick="abrirProntuario('${app.patient_id}', '${app.patient_name}')">👤 ${app.patient_name}</a></td>
+            <td>${app.doctor_name}</td>
+            <td>${app.specialty}</td>
+            <td>🗓️ ${dataFormatada}</td>
+            <td><span class="badge" style="background: ${statusColor} !important; color: white;">${app.status || 'Agendado'}</span></td>
+        </tr>
+    `;
+});
         } else {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;">Nenhum agendamento encontrado para este filtro.</td></tr>';
         }
@@ -429,17 +431,46 @@
     document.getElementById('campoHorario').value = horario;
 }
 
-function salvarAgendamentoRapido() {
-    const horario = document.getElementById('campoHorario').value;
-    const pacienteId = document.getElementById('campoBuscaPaciente').value; // Você precisa criar este input
+async function salvarAgendamentoRapido() {
+    const horario = document.getElementById('campoHorario').value; // O horário que já aparece no modal
+    const buscaPaciente = document.getElementById('campoBuscaPaciente').value; // O nome ou CPF digitado
 
-    if (!pacienteId) {
-        alert("Por favor, selecione um paciente!");
+    // 1. Precisamos buscar o ID do paciente primeiro (baseado no nome/CPF)
+    // Supondo que você tenha uma rota de busca de usuários ou que já tenha o ID
+    const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(buscaPaciente)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (!data.success || data.patients.length === 0) {
+        alert("Paciente não encontrado!");
         return;
     }
-    
-    // Aqui viria o seu fetch para enviar o agendamento ao banco
-    console.log("Agendando para o paciente:", pacienteId, "às", horario);
+
+    const paciente = data.patients[0]; // Pega o primeiro resultado encontrado
+
+    // 2. Agora enviamos o agendamento real
+    const bodyPayload = {
+        patient_id: paciente.id,
+        doctor_name: document.getElementById('filterDynamic').value, // Assume o profissional do filtro
+        specialty: document.getElementById('filterType').value === 'medico' ? 'Consulta' : 'Exame',
+        appointment_date: `${document.getElementById('filterDate').value}T${horario}:00`
+    };
+
+    const resAgendar = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(bodyPayload)
+    });
+
+    const dataAgendar = await resAgendar.json();
+    if (dataAgendar.success) {
+        alert("Agendamento realizado com sucesso!");
+        document.getElementById('seuModalId').style.display = 'none'; // Fecha o modal
+        carregarConsultasClinica(); // Atualiza a tabela principal
+    } else {
+        alert("Erro ao agendar: " + dataAgendar.message);
+    }
 }
 
 </script>
