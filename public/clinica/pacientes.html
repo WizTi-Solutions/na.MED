@@ -150,9 +150,9 @@
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Consultando banco de dados...</td></tr>';
 
         try {
-            const response = await fetch(`http:///api/server//api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+});
             const data = await response.json();
 
             if (!response.ok || !data.success) {
@@ -211,7 +211,7 @@
         container.innerHTML = '<span style="color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Vasculhando arquivos no servidor...</span>';
 
         try {
-            const response = await fetch(`http:///api/server//api/appointments/patient-documents/${patientId}`, {
+            const response = await fetch(`/api/appointments/patient-documents/${patientId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -223,7 +223,7 @@
                     container.innerHTML += `
                         <li style="display:flex; justify-content: space-between; align-items:center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
                             <span>📄 <strong>${doc.file_name}</strong> <small style="color:#64748b;">(Enviado em: ${dataEnvio})</small></span>
-                            <a href="http:///api/server/${doc.file_path}" target="_blank" class="btn-action btn-blue" style="text-decoration:none; padding:4px 8px; font-size:11px;">
+                            <a href="/${doc.file_path}" target="_blank" class="btn-action btn-blue" style="text-decoration:none; padding:4px 8px; font-size:11px;">
                                 <i class="fa-solid fa-eye"></i> Visualizar
                             </a>
                         </li>
@@ -260,7 +260,7 @@
         }
 
         try {
-            const response = await fetch('http:///api/server//api/auth/update-profile', {
+            const response = await fetch('/api/auth/update-profile', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -298,7 +298,7 @@
         formData.append('laudo', fileInput);
 
         try {
-            const response = await fetch('http:///api/server//api/appointments/upload-document', {
+            const response = await fetch('/api/appointments/upload-document', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
