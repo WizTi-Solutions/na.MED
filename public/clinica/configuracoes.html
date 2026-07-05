@@ -477,9 +477,9 @@
     // ================= GERENCIAMENTO DE PERMISSÕES E ACESSOS REAIS =================
     async function carregarPainelPermissoes() {
         try {
-            const res = await fetch('http:///api/server//api/config/system-users', { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            });
+            const res = await fetch('/api/config/system-users', { 
+    headers: { 'Authorization': `Bearer ${token}` } 
+});
             const data = await res.json();
             
             const tbodyEquipe = document.getElementById('tbodyEquipeSistema');
@@ -561,11 +561,11 @@
             payload.password = passwordValue;
         }
 
-        let url = 'http:///api/server//api/auth/cadastrar-funcionario';
+        let url = '/api/auth/cadastrar-funcionario';
         let method = 'POST';
 
         if (editFuncionarioId) {
-            url = `http:///api/server//api/auth/funcionario/${editFuncionarioId}`;
+            url = `/api/auth/funcionario/${editFuncionarioId}`;
             method = 'PUT';
         }
 
@@ -594,10 +594,10 @@
     async function excluirFuncionario(id, nome) {
         if (confirm(`⚠️ ATENÇÃO: Deseja realmente remover o acesso de "${nome}" do sistema?\nEsta ação é irreversível!`)) {
             try {
-                const res = await fetch(`http:///api/server//api/auth/funcionario/${id}`, { 
-                    method: 'DELETE', 
-                    headers: { 'Authorization': `Bearer ${token}` } 
-                });
+                const res = await fetch(`/api/auth/funcionario/${id}`, { 
+    method: 'DELETE', 
+    headers: { 'Authorization': `Bearer ${token}` } 
+});
                 const data = await res.json();
                 if (data.success) {
                     alert('🗑️ Funcionário desligado do sistema com sucesso!');
