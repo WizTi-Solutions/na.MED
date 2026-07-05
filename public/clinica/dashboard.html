@@ -428,6 +428,20 @@
     // Defina o horário clicado
     document.getElementById('campoHorario').value = horario;
 }
+
 </script>
+<!-- Adicione este bloco antes do fechamento do </body> -->
+<div id="seuModalId" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal" onclick="document.getElementById('seuModalId').style.display='none'">&times;</span>
+        <h3>Agendamento Rápido</h3>
+        <div class="form-group">
+            <label>Horário:</label>
+            <input type="text" id="campoHorario" readonly>
+        </div>
+        <!-- Aqui você adicionaria o restante do seu formulário de agendamento -->
+        <button onclick="salvarAgendamentoRapido()" style="background:#16a34a; color:white; border:none; padding:10px; width:100%;">Confirmar</button>
+    </div>
+</div>
 </body>
 </html>
