@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Acesso - na.MED</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #1e293b; margin-bottom: 20px; }
+        .logo span { color: #dc2626; } /* Vermelho da Named */
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #16a34a; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #15803d; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="logo">na.<span>MED</span></div>
+    <h3>Área do Paciente e Profissional</h3>
+    
+    <form id="loginForm">
+        <input type="text" id="loginCpf" placeholder="Digite seu CPF (apenas números)" required maxlength="11">
+        <input type="password" id="loginPassword" placeholder="Digite sua senha" required>
+        <button type="submit">Entrar no Portal</button>
+        
+        <!-- 🔗 LINK DO AUTO-CADASTRO MANTIDO LINDO AQUI -->
+        <div style="text-align: center; margin-top: 15px;">
+            <span style="color: #64748b; font-size: 14px;">Novo por aqui? </span>
+            <a href="/paciente/criar-conta.html" style="color: #2563eb; font-size: 14px; font-weight: bold; text-decoration: none;">
+                Criar minha conta na.MED
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const usuarioDigitado = document.getElementById('loginCpf').value; 
+    const senhaDigitada = document.getElementById('loginPassword').value;
+
+    try {
+        // 🎯 Correção aqui: Apontando absoluto para a porta 5000 do seu backend local
+        const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                email: usuarioDigitado, 
+                password: senhaDigitada 
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            localStorage.setItem('token', data.token);
+            alert('🎉 Login realizado com sucesso!');
+            
+            const cargoLimpo = data.user.role ? data.user.role.toLowerCase().trim() : '';
+
+            // 🎯 REDIRECIONAMENTO INTELIGENTE BLINDADO
+            if (cargoLimpo === 'admin' || cargoLimpo === 'recepcao' || cargoLimpo === 'medico' || cargoLimpo === 'tecnico') {
+                // Toda a equipe operacional e gerencial vai para o painel da clínica
+                window.location.href = '/clinica/dashboard.html';
+            } else {
+                // Quem for estritamente 'paciente' vai para o portal do cliente
+                window.location.href = '/paciente/dashboard.html';
+            }
+        } else {
+            alert('❌ Erro: ' + data.message);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Erro ao conectar com o servidor.');
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel do Paciente - na.MED</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        .btn-logout { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        /* Abas Navegação */
+        .tabs-nav { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 25px; }
+        .tab-btn { background: none; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn:hover { color: #2563eb; }
+        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Grid de Agendamento */
+        .booking-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+        .card-form { background: #f8fafc; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; height: fit-content; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
+        .form-group label { font-size: 12px; font-weight: bold; color: #475569; }
+        .form-group input, .form-group select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; }
+        
+        /* Grid de Horários Disponíveis */
+        .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
+        .slot-btn { padding: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; color: #166534; cursor: pointer; font-weight: bold; text-align: center; }
+        .slot-btn:hover { background: #16a34a; color: white; }
+        .slot-btn.selected { background: #2563eb; color: white; border-color: #1d4ed8; }
+
+        /* Tabelas */
+        .data-table { width: 100%; border-collapse: collapse; background: white; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        .data-table th { background: #f1f5f9; color: #475569; }
+        .badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; color: white; }
+        
+        .btn-download { background: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <h2>👤 Área do Paciente - na.MED</h2>
+        <button id="btnLogout" class="btn-logout">Sair</button>
+    </div>
+
+    <!-- 📑 ABAS DO PACIENTE -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-agendar')">🗓️ Novo Agendamento</button>
+        <button class="tab-btn" onclick="switchTab('tab-historico')">📋 Meus Atendimentos</button>
+        <button class="tab-btn" onclick="switchTab('tab-documentos')">📄 Exames e Laudos</button>
+        <button class="tab-btn" onclick="switchTab('tab-perfil')">⚙️ Meus Dados</button>
+    </div>
+    
+    <!-- ================= ABA 1: NOVO AGENDAMENTO ================= -->
+    <div id="tab-agendar" class="tab-content active">
+        <div class="booking-grid">
+            <div class="card-form">
+                <h3>Agende sua Consulta ou Exame</h3>
+                <form id="formNewBooking">
+                    <div class="form-group">
+                        <label>O que deseja realizar?</label>
+                        <select id="bookingType" onchange="alternarTipoAgendamento()">
+                            <option value="medico">🩺 Consulta Médica</option>
+                            <option value="exame">🔬 Exame / Procedimento</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label id="labelBookingOption">Especialidade:</label>
+                        <select id="bookingOption" onchange="carregarProfissionaisDisponiveis()">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Profissional:</label>
+                        <select id="bookingProfessional" onchange="buscarHorariosLivres()">
+                            <option value="">Selecione a opção acima...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Escolhida:</label>
+                        <input type="date" id="bookingDate" onchange="buscarHorariosLivres()">
+                    </div>
+                    <input type="hidden" id="selectedTimeSlot">
+                    <button type="submit" class="btn-logout" style="background: #16a34a; width: 100%; padding: 12px; font-size: 15px; margin-top: 15px;">Confirmar Agendamento</button>
+                </form>
+            </div>
+            <div>
+                <h3 style="margin-top: 0; color: #1e293b;">⏰ Horários Disponíveis para a Data</h3>
+                <p style="color: #64748b; font-size: 14px;">Selecione um dia e veja os horários operacionais livres da clínica.</p>
+                <div class="slots-grid" id="containerTimeSlots">
+                    <div style="color: #94a3b8; font-style: italic; grid-column: 1/-1;">Selecione a Especialidade, o Profissional e a Data para ver os horários.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ABA 2: HISTÓRICO DE ATENDIMENTOS ================= -->
+    <div id="tab-historico" class="tab-content">
+        <h3>Histórico Completo de Atendimentos</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Procedimento / Consulta</th>
+                    <th>Profissional</th>
+                    <th>Data e Hora</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyHistory">
+                <tr><td colspan="5" style="text-align: center; color: #64748b;">Nenhum atendimento agendado.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ================= ABA 3: RESULTADOS E DOCUMENTOS ================= -->
+    <div id="tab-documentos" class="tab-content">
+        <h3>Meus Laudos, Exames e Resultados</h3>
+        <p style="color: #64748b; font-size: 14px;">Arquivos em PDF liberados pelos técnicos e médicos da clínica.</p>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome do Arquivo</th>
+                    <th>Referente ao Atendimento</th>
+                    <th>Data de Liberação</th>
+                    <th>Download</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyDocuments">
+                <tr><td colspan="4" style="text-align: center; color: #64748b;">Nenhum laudo disponível no momento.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ================= ABA 4: MEUS DADOS / PERFIL ================= -->
+    <div id="tab-perfil" class="tab-content">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start;">
+            
+            <!-- Formulário Principal de Meus Dados -->
+            <div class="card-form" style="width: 100%; box-sizing: border-box;">
+                <h3>Meus Dados Cadastrais</h3>
+                <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Mantenha suas informações pessoais e de convênio atualizadas no portal.</p>
+                
+                <form id="formMeusDados">
+                    <div style="font-size: 13px; font-weight: bold; color: #16a34a; margin-bottom: 12px; text-transform: uppercase;">ℹ️ Identificação</div>
+                    <div class="form-group">
+                        <label>Nome Completo:</label>
+                        <input type="text" id="perfilName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>CPF (Não editável):</label>
+                        <input type="text" id="perfilCpf" readonly style="background: #e2e8f0; color: #475569; cursor: not-allowed;">
+                    </div>
+
+                    <div style="font-size: 13px; font-weight: bold; color: #16a34a; margin: 20px 0 12px 0; text-transform: uppercase;">📞 Contato e Endereço</div>
+                    <div class="form-group">
+                        <label>Telefone / WhatsApp:</label>
+                        <input type="text" id="perfilPhone" placeholder="(34) 99999-9999">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Endereço Residencial:</label>
+                        <input type="text" id="perfilAddress" placeholder="Rua, Número, Bairro, Cidade">
+                    </div>
+
+                    <div style="font-size: 13px; font-weight: bold; color: #16a34a; margin: 20px 0 12px 0; text-transform: uppercase;">🩺 Ficha Médica e Convênio</div>
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Tipo Sanguíneo:</label>
+                            <select id="perfilBlood">
+                                <option value="">Não informado</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 2;">
+                            <label>Plano de Saúde / Convênio:</label>
+                            <input type="text" id="perfilInsuranceName" placeholder="Ex: Unimed, Bradesco">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Número da Carteirinha do Plano:</label>
+                        <input type="text" id="perfilInsuranceCard" placeholder="Número do cartão do convênio">
+                    </div>
+
+                    <button type="submit" class="btn-submit" style="background: #16a34a; margin-top: 15px; width: 100%; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-floppy-disk"></i> Salvar Alterações</button>
+                </form>
+            </div>
+
+            <!-- 🔒 COLUNA DA DIREITA: Card de Alteração de Senha Integrado -->
+            <div class="card-form" style="width: 100%; box-sizing: border-box; border-color: #fca5a5; background: #fff5f5;">
+                <h3 style="color: #dc2626;"><i class="fa-solid fa-shield-halved"></i> Alterar Senha</h3>
+                <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Atualize suas credenciais de acesso por segurança.</p>
+                
+                <form id="formAlterarSenhaPaciente">
+                    <div class="form-group">
+                        <label style="color: #475569;">Senha Atual:</label>
+                        <input type="password" id="senhaAtualInput" required placeholder="Sua senha atual">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #475569;">Nova Senha:</label>
+                        <input type="password" id="novaSenhaInput" required placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <button type="submit" class="btn-submit" style="background: #dc2626; margin-top: 10px; width: 100%; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-key"></i> Atualizar Senha</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    let listaEspecialidades = [];
+    let listaExames = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!token) {
+            alert('Acesso negado! Faça login novamente.');
+            window.location.href = '/auth.html';
+            return;
+        }
+        await carregarConfiguracoesAgendamento();
+        alternarTipoAgendamento();
+        await carregarHistoricoPaciente();
+        await carregarLaudosPaciente();
+        await carregarPerfilPaciente();
+    });
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+    }
+
+    async function carregarConfiguracoesAgendamento() {
+        try {
+            const authHeader = { headers: { 'Authorization': `Bearer ${token}` } };
+            
+            const resSpec = await fetch('/api/catalog/specialties', authHeader);
+            const dataSpec = await resSpec.json();
+            if(dataSpec.success) listaEspecialidades = dataSpec.specialties;
+
+            const resExams = await fetch('/api/catalog/exam-types', authHeader);
+            const dataExams = await resExams.json();
+            if(dataExams.success) listaExames = dataExams.examTypes;
+        } catch (err) {
+            console.error('Erro ao carregar configurações de catálogo:', err);
+        }
+    }
+
+    function alternarTipoAgendamento() {
+        const type = document.getElementById('bookingType').value;
+        const label = document.getElementById('labelBookingOption');
+        const select = document.getElementById('bookingOption');
+        
+        select.innerHTML = '<option value="">Selecione...</option>';
+        document.getElementById('bookingProfessional').innerHTML = '<option value="">Selecione a opção acima...</option>';
+
+        if (type === 'medico') {
+            label.innerText = 'Especialidade Médica:';
+            listaEspecialidades.forEach(s => {
+                select.innerHTML += `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`;
+            });
+        } else {
+            label.innerText = 'Exame / Procedimento:';
+            listaExames.forEach(e => {
+                select.innerHTML += `<option value="${e.id}">${e.name} (${e.duration_minutes} min)</option>`;
+            });
+        }
+    }
+
+    async function carregarProfissionaisDisponiveis() {
+        const type = document.getElementById('bookingType').value;
+        const optionId = document.getElementById('bookingOption').value;
+        const selectProf = document.getElementById('bookingProfessional');
+
+        if(!optionId) return;
+
+        try {
+            const res = await fetch('/api/catalog/professionals', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            
+            selectProf.innerHTML = '<option value="">Selecione o profissional...</option>';
+
+            if(data.success) {
+                const textOption = document.getElementById('bookingOption').options[document.getElementById('bookingOption').selectedIndex].text.split(' (')[0];
+                
+                const filtrados = data.professionals.filter(p => {
+                    if (type === 'medico') {
+                        return p.role === 'medico' && p.specialties && p.specialties.includes(textOption);
+                    } else {
+                        return p.role !== 'medico' && p.exams && p.exams.includes(textOption);
+                    }
+                });
+
+                filtrados.forEach(p => {
+                    selectProf.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function buscarHorariosLivres() {
+        const container = document.getElementById('containerTimeSlots');
+        const dataDigitada = document.getElementById('bookingDate').value;
+        const selectOption = document.getElementById('bookingOption');
+        const doctorName = document.getElementById('bookingProfessional').value;
+
+        if (!dataDigitada || selectOption.value === "" || !doctorName) {
+            container.innerHTML = '<div style="color: #94a3b8; font-style: italic; grid-column: 1/-1;">Selecione a Especialidade, o Profissional e a Data para ver os horários.</div>';
+            return;
+        }
+
+        const textoSelecionado = selectOption.options[selectOption.selectedIndex].text;
+        let duracao = 60; 
+        const match = textoSelecionado.match(/\((\d+)\s*min\)/);
+        if (match) {
+            duracao = parseInt(match[1]);
+        }
+
+        container.innerHTML = '<div style="color: #94a3b8; grid-column: 1/-1;">Consultando agenda da clínica...</div>';
+
+        let horariosOcupados = [];
+        try {
+            const res = await fetch(`/api/appointments/all-appointments?data=${dataDigitada}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const dataRes = await res.json();
+            
+            if (dataRes.success) {
+                horariosOcupados = dataRes.appointments
+                    .filter(app => app.doctor_name === doctorName && app.status !== 'Cancelado')
+                    .map(app => {
+                        return new Date(app.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    });
+            }
+        } catch (err) {
+            console.error('Erro ao cruzar horários:', err);
+        }
+
+        container.innerHTML = '';
+
+        const turnos = [
+            { inicio: "08:00", fim: "12:00" },
+            { inicio: "13:00", fim: "18:00" }
+        ];
+
+        let gerouAlgumSlot = false;
+
+        turnos.forEach(turno => {
+            let [horaAtual, minAtual] = turno.inicio.split(':').map(Number);
+            const [horaFim, minFim] = turno.fim.split(':').map(Number);
+            const limiteMinutos = horaFim * 60 + minFim;
+
+            while ((horaAtual * 60 + minAtual) < limiteMinutos) {
+                const horaFormatada = String(horaAtual).padStart(2, '0');
+                const minFormatada = String(minAtual).padStart(2, '0');
+                const horarioString = `${horaFormatada}:${minFormatada}`;
+
+                if (!horariosOcupados.includes(horarioString)) {
+                    container.innerHTML += `<div class="slot-btn" onclick="selecionarHorario(this, '${horarioString}')">${horarioString}</div>`;
+                    gridOcupada = true;
+                    gerouAlgumSlot = true;
+                }
+
+                minAtual += duracao;
+                if (minAtual >= 60) {
+                    horaAtual += Math.floor(minAtual / 60);
+                    minAtual = minAtual % 60;
+                }
+            }
+        });
+
+        if (!gerouAlgumSlot) {
+            container.innerHTML = '<div style="color: #dc3545; font-weight: bold; grid-column: 1/-1;">❌ Agenda esgotada para este profissional nesta data!</div>';
+        }
+    }
+
+    function selecionarHorario(elemento, hora) {
+        document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('selected'));
+        elemento.classList.add('selected');
+        document.getElementById('selectedTimeSlot').value = hora;
+    }
+
+    async function carregarHistoricoPaciente() {
+        const tbody = document.getElementById('tbodyHistory');
+        try {
+            const res = await fetch('/api/appointments/my-appointments', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.success && data.appointments && data.appointments.length > 0) {
+                tbody.innerHTML = '';
+                data.appointments.forEach(app => {
+                    const dataFormatada = new Date(app.appointment_date).toLocaleString('pt-BR', {
+                        dateStyle: 'short',
+                        timeStyle: 'short'
+                    });
+
+                    let statusColor = '#6c757d';
+                    let statusTexto = app.status || 'Agendado';
+                    let botaoAcao = '';
+
+                    if (statusTexto === 'Conoluldo' || statusTexto === 'Concluído') {
+                        statusTexto = 'Concluído';
+                    }
+
+                    if (statusTexto === 'Agendado') {
+                        statusColor = '#28a745';
+                        botaoAcao = `<button onclick="cancelarMeuAgendamento('${app.id}')" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">❌ Cancelar</button>`;
+                    } else if (statusTexto === 'Cancelado') {
+                        statusColor = '#dc3545';
+                        botaoAcao = `<span style="color: #94a3b8; font-size: 12px; font-style: italic;">Sem ações</span>`;
+                    } else {
+                        botaoAcao = `<span style="color: #94a3b8; font-size: 12px; font-style: italic;">Concluído</span>`;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${app.specialty}</strong></td>
+                            <td>${app.doctor_name}</td>
+                            <td>🗓️ ${dataFormatada}</td>
+                            <td><span class="badge" style="background: ${statusColor};">${statusTexto}</span></td>
+                            <td>${botaoAcao}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;">Nenhum agendamento encontrado no seu histórico.</td></tr>';
+            }
+        } catch (error) {
+            console.error('Erro ao carregar histórico:', error);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Erro ao carregar atendimentos.</td></tr>';
+        }
+    }
+
+    async function cancelarMeuAgendamento(id) {
+        if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
+            try {
+                const response = await fetch(`/api/appointments/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Agendamento cancelado com sucesso!');
+                    await carregarHistoricoPaciente();
+                } else {
+                    alert('Erro ao cancelar: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                alert('Erro ao conectar com o servidor.');
+            }
+        }
+    }
+
+    async function carregarLaudosPaciente() {
+        const tbody = document.getElementById('tbodyDocuments');
+        try {
+            const res = await fetch('/api/appointments/my-documents', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.success && data.documents && data.documents.length > 0) {
+                tbody.innerHTML = '';
+                data.documents.forEach(doc => {
+                    const dataLiberacao = new Date(doc.uploaded_at).toLocaleDateString('pt-BR');
+                    const vinculoAtendimento = doc.specialty || 'Documento Geral / Avulso';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>📄 ${doc.file_name}</strong></td>
+                            <td><span class="badge" style="background: #64748b;">${vinculoAtendimento}</span></td>
+                            <td>${dataLiberacao}</td>
+                            <td>
+                                <a href="${doc.file_path}" target="_blank" class="btn-download" download>
+                                    ⬇️ Baixar PDF
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b;">Nenhum laudo ou exame disponível no momento.</td></tr>';
+            }
+        } catch (error) {
+            console.error('Erro ao carregar laudos:', error);
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Erro ao carregar lista de exames.</td></tr>';
+        }
+    }
+
+    async function carregarPerfilPaciente() {
+        try {
+            const res = await fetch('/api/auth/me', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                document.getElementById('perfilName').value = data.user.name || '';
+                document.getElementById('perfilCpf').value = data.user.email || '';
+                document.getElementById('perfilPhone').value = data.user.phone || '';
+                document.getElementById('perfilAddress').value = data.user.address || '';
+                document.getElementById('perfilBlood').value = data.user.blood_type || '';
+                document.getElementById('perfilInsuranceName').value = data.user.health_insurance_name || '';
+                document.getElementById('perfilInsuranceCard').value = data.user.health_insurance_card || '';
+            }
+        } catch (err) {
+            console.error('Erro ao buscar perfil:', err);
+        }
+    }
+
+    document.getElementById('formMeusDados').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const payload = {
+            name: document.getElementById('perfilName').value,
+            phone: document.getElementById('perfilPhone').value,
+            address: document.getElementById('perfilAddress').value,
+            blood_type: document.getElementById('perfilBlood').value,
+            health_insurance_name: document.getElementById('perfilInsuranceName').value,
+            health_insurance_card: document.getElementById('perfilInsuranceCard').value
+        };
+
+        try {
+            const response = await fetch('/api/auth/update-profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('🎉 Seus dados médicos e de contato foram atualizados!');
+                await carregarPerfilPaciente();
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro de conexão com o servidor.');
+        }
+    });
+
+    // 💾 DISPARAR ATUALIZAÇÃO DE SENHA DO PACIENTE
+    document.getElementById('formAlterarSenhaPaciente').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const payload = {
+            senha_atual: document.getElementById('senhaAtualInput').value,
+            nova_senha: document.getElementById('novaSenhaInput').value
+        };
+
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/auth/alterar-senha', {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                alert('🎉 Senha atualizada com sucesso! Use sua nova credencial no próximo login.');
+                document.getElementById('formAlterarSenhaPaciente').reset();
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro de comunicação com o servidor.');
+        }
+    });
+
+    document.getElementById('formNewBooking').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const selectOption = document.getElementById('bookingOption');
+        if (selectOption.value === "") {
+            alert('Por favor, selecione uma opção válida!');
+            return;
+        }
+        const specialtyName = selectOption.options[selectOption.selectedIndex].text.split(' (')[0];
+        const doctorName = document.getElementById('bookingProfessional').value;
+        const date = document.getElementById('bookingDate').value;
+        const time = document.getElementById('selectedTimeSlot').value;
+
+        if (!doctorName || !date || !time) {
+            alert('Por favor, preencha todos os campos e selecione um horário livre!');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/appointments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    doctor_name: doctorName,
+                    specialty: specialtyName,
+                    appointment_date: `${date}T${time}:00`
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('Agendamento realizado com sucesso!');
+                document.getElementById('formNewBooking').reset();
+                document.getElementById('containerTimeSlots').innerHTML = '<div style="color: #94a3b8; font-style: italic; grid-column: 1/-1;">Selecione uma data para consultar os horários.</div>';
+                await carregarHistoricoPaciente();
+                switchTab('tab-historico');
+            } else {
+                alert(data.message || 'Erro ao agendar.');
+            }
+        } catch (err) {
+            console.error('Erro na requisição:', err);
+            alert('Erro de conexão com o servidor.');
+        }
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = '/auth.html';
+    });
+</script>
+</body>
+</html>

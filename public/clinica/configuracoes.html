@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciamento - na.MED</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .btn-back { text-decoration: none; background: #64748b; color: white; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        
+        /* Estilização das Abas */
+        .tabs-nav { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 25px; }
+        .tab-btn { background: none; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn:hover { color: #2563eb; }
+        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Formulários e Tabelas */
+        .panel-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+        .card-form { background: #f8fafc; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; height: fit-content; }
+        h3 { margin-top: 0; color: #1e293b; padding-bottom: 5px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
+        .form-group label { font-size: 12px; font-weight: bold; color: #475569; }
+        .form-group input, .form-group select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; }
+        
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; background: white; padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; max-height: 120px; overflow-y: auto; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+        .btn-submit { background: #16a34a; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        
+        /* Estilo das Tabelas de Listagem */
+        .data-table { width: 100%; border-collapse: collapse; background: white; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        .data-table th { background: #f1f5f9; color: #475569; }
+        .btn-action { padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 5px; }
+        .btn-edit { background: #3b82f6; color: white; }
+        .btn-delete { background: #ef4444; color: white; }
+        .badge { background: #e2e8f0; padding: 2px 6px; border-radius: 3px; font-size: 11px; text-transform: uppercase; font-weight: bold; }
+        
+        /* Box de alerta para bloqueios */
+        .alert-box { background: #fff5f5; border: 1px dashed #fca5a5; padding: 15px; border-radius: 6px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <h2>⚙️ Painel de Cadastros e Configurações</h2>
+        <a href="dashboard.html" class="btn-back">← Voltar para a Agenda</a>
+    </div>
+
+    <!-- 📑 MENU DE ABAS -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-profissionais')">👥 Profissionais</button>
+        <button class="tab-btn" onclick="switchTab('tab-especialidades')">🩺 Especialidades</button>
+        <button class="tab-btn" onclick="switchTab('tab-exames')">🔬 Tipos de Exames</button>
+        <button class="tab-btn" onclick="switchTab('tab-permissoes-config')">🔑 Controle de Acessos</button>
+        <button class="tab-btn" onclick="switchTab('tab-agenda-config')">📅 Grade Operacional & Bloqueios</button>
+    </div>
+
+    <!-- ================= ABA 1: PROFISSIONAIS ================= -->
+    <div id="tab-profissionais" class="tab-content active">
+        <div class="panel-grid">
+            <div class="card-form">
+                <h3>Novo Profissional</h3>
+                <form id="formProfessional">
+                    <div class="form-group">
+                        <label>Nome Completo:</label>
+                        <input type="text" id="profName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Função / Cargo:</label>
+                        <select id="profRole">
+                            <option value="medico">Médico Especialista</option>
+                            <option value="tecnico">Técnico de Radiologia/Enfermagem</option>
+                            <option value="biomedico">Biomédico</option>
+                            <option value="enfermeiro">Enfermeiro Padrão</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="groupSpecialtiesLink">
+                        <label>Vincular Especialidades:</label>
+                        <div class="checkbox-group" id="containerSpecialtiesCheckboxes"></div>
+                    </div>
+                    <div class="form-group" id="groupExamsLink" style="display: none;">
+                        <label>Vincular Exames Autorizados:</label>
+                        <div class="checkbox-group" id="containerExamsCheckboxes"></div>
+                    </div>
+                    <button type="submit" class="btn-submit">Salvar Profissional</button>
+                </form>
+            </div>
+            <div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Cargo</th>
+                            <th>Atividades Vinculadas</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyProfessionals"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ABA 2: ESPECIALIDADES ================= -->
+    <div id="tab-especialidades" class="tab-content">
+        <div class="panel-grid">
+            <div class="card-form">
+                <h3>Nova Especialidade</h3>
+                <form id="formSpecialty">
+                    <div class="form-group">
+                        <label>Nome da Especialidade:</label>
+                        <input type="text" id="specName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Duração da Consulta (minutos):</label>
+                        <input type="number" id="specDuration" value="30" min="10" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Salvar Especialidade</button>
+                </form>
+            </div>
+            <div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Especialidade</th>
+                            <th>Duração Padrão</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodySpecialties"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ABA 3: EXAMES ================= -->
+    <div id="tab-exames" class="tab-content">
+        <div class="panel-grid">
+            <div class="card-form">
+                <h3>Novo Tipo de Exame</h3>
+                <form id="formExamType">
+                    <div class="form-group">
+                        <label>Nome do Exame:</label>
+                        <input type="text" id="examName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Duração do Procedimento (min):</label>
+                        <input type="number" id="examDuration" value="15" min="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Perfil Responsável:</label>
+                        <select id="examRole">
+                            <option value="tecnico">Técnico de Radiologia/Enfermagem</option>
+                            <option value="biomedico">Biomédico</option>
+                            <option value="enfermeiro">Enfermeiro Padrão</option>
+                            <option value="medico">Médico Especialista</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-submit">Salvar Tipo de Exame</button>
+                </form>
+            </div>
+            <div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nome do Exame</th>
+                            <th>Duração</th>
+                            <th>Responsável</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyExams"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ABA 4: CONFIGURAÇÕES DE GRADE E BLOQUEIOS ================= -->
+    <div id="tab-agenda-config" class="tab-content">
+        <div class="panel-grid">
+            <div class="card-form">
+                <h3>Configurar Horários</h3>
+                <form id="formGradeOperacional">
+                    <div class="form-group">
+                        <label>Especialidade / Atendimento:</label>
+                        <select id="configSpecialty" required>
+                            <option value="Consultas Médicas">Consultas Médicas</option>
+                            <option value="Ultrassom">Ultrassom</option>
+                            <option value="Raio-X">Raio-X</option>
+                            <option value="Exames de Sangue">Exames de Sangue</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Dia de Atendimento:</label>
+                        <select id="configDay" required>
+                            <option value="1">Segunda-feira</option>
+                            <option value="2">Terça-feira</option>
+                            <option value="3">Quarta-feira</option>
+                            <option value="4">Quinta-feira</option>
+                            <option value="5">Sexta-feira</option>
+                            <option value="6">Sábado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Horário de Início:</label>
+                        <input type="time" id="configStart" value="08:00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Horário de Término:</label>
+                        <input type="time" id="configEnd" value="18:00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tempo do Bloco (Minutos):</label>
+                        <input type="number" id="configInterval" value="60" min="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nome do Médico (Opcional):</label>
+                        <input type="text" id="configDoctor" placeholder="Ex: Dr. Mozart">
+                    </div>
+                    <button type="submit" class="btn-submit" style="background: #2563eb;">Salvar Regra Operacional</button>
+                </form>
+
+                <div class="alert-box">
+                    <h3 style="color: #dc2626; font-size: 15px; margin-bottom: 10px;">🔒 Bloqueio de Agenda</h3>
+                    <form id="formBloqueioAgenda">
+                        <div class="form-group">
+                            <label>Data para Fechamento:</label>
+                            <input type="date" id="blockDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Motivo:</label>
+                            <input type="text" id="blockReason" placeholder="Ex: Manutenção / Feriado" required>
+                        </div>
+                        <button type="submit" class="btn-submit" style="background: #dc2626;">Bloquear Data</button>
+                    </form>
+                </div>
+            </div>
+
+            <div>
+                <h3 style="font-size: 16px; color: #475569;">Regras de Grades Ativas</h3>
+                <table class="data-table" style="margin-bottom: 30px;">
+                    <thead>
+                        <tr>
+                            <th>Especialidade</th>
+                            <th>Dia da Semana</th>
+                            <th>Janela de Horário</th>
+                            <th>Intervalo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyRules"></tbody>
+                </table>
+
+                <h3 style="font-size: 16px; color: #dc2626;">Bloqueios de Datas Agendados</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data Bloqueada</th>
+                            <th>Motivo do Fechamento</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyBlocks"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 🔑 ABA 5: GESTÃO DE EQUIPE E ACESSOS ================= -->
+    <div id="tab-permissoes-config" class="tab-content">
+        <div class="panel-grid">
+            
+            <!-- 🏢 COLUNA DA ESQUERDA: Formulário único de cadastro -->
+            <div>
+                <div class="card-form" style="box-sizing: border-box; width: 100%;">
+                    <h3 id="tituloFormFuncionario" style="margin-bottom: 15px; color: #16a34a;"><i class="fa-solid fa-user-plus"></i> Registrar Equipe</h3>
+                    <form id="formCadastrarFuncionario">
+                        <div class="form-group">
+                            <label>Nome Completo:</label>
+                            <input type="text" id="funcName" required placeholder="Ex: Dr. Mozart Augusto">
+                        </div>
+                        <div class="form-group">
+                            <label>Usuário de Acesso (CPF ou E-mail):</label>
+                            <input type="text" id="funcEmail" required placeholder="Digite o CPF ou login">
+                        </div>
+                        <div class="form-group">
+                            <label>Senha de Acesso:</label>
+                            <input type="password" id="funcPassword" required placeholder="Senha inicial" autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefone / WhatsApp (Opcional):</label>
+                            <input type="text" id="funcPhone" placeholder="Ex: 34999999999">
+                        </div>
+                        <div class="form-group">
+                            <label>Definir Perfil / Nível de Acesso:</label>
+                            <select id="funcRole" required>
+                                <option value="">-- Escolha o Perfil --</option>
+                                <option value="medico">🩺 Médico Especialista</option>
+                                <option value="recepcao">👥 Recepção / Atendimento</option>
+                                <option value="tecnico">🔬 Técnico Operacional</option>
+                                <option value="admin">🔒 Administrador Geral</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit" id="btnSubmitFuncionario" style="background: #16a34a;"><i class="fa-solid fa-user-plus"></i> Matricular Funcionário</button>
+                        <button type="button" class="btn-submit" id="btnCancelarEdicaoFunc" style="background: #64748b; margin-top: 10px; display: none;" onclick="cancelarEdicaoFuncionario()">Cancelar Edição</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 📊 COLUNA DA DIREITA: Tabela de monitoramento de equipe integrada com ações -->
+            <div>
+                <h3 style="font-size: 16px; color: #475569; margin-bottom: 15px;"><i class="fa-solid fa-users-gear"></i> Equipe Cadastrada no Sistema</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Usuário/CPF</th>
+                            <th>Cargo</th>
+                            <th style="width: 160px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyEquipeSistema">
+                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Carregando equipe...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    
+    let editSpecialtyId = null;
+    let editExamTypeId = null;
+    let editProfessionalId = null;
+    let editFuncionarioId = null;
+
+    const diasSemana = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarEspecialidades();
+        carregarExames();
+        carregarProfissionais();
+        carregarConfiguracoesAgenda(); 
+        carregarPainelPermissoes(); 
+    });
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+    }
+
+    document.getElementById('profRole').addEventListener('change', (e) => {
+        if (e.target.value === 'medico') {
+            document.getElementById('groupSpecialtiesLink').style.display = 'flex';
+            document.getElementById('groupExamsLink').style.display = 'none';
+        } else {
+            document.getElementById('groupSpecialtiesLink').style.display = 'none';
+            document.getElementById('groupExamsLink').style.display = 'flex';
+        }
+    });
+
+    // ================= CONFIGURAÇÃO DE HORÁRIOS E AGENDA =================
+    document.getElementById('formGradeOperacional').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            specialty: document.getElementById('configSpecialty').value,
+            day_of_week: parseInt(document.getElementById('configDay').value),
+            start_time: document.getElementById('configStart').value,
+            end_time: document.getElementById('configEnd').value,
+            interval_minutes: parseInt(document.getElementById('configInterval').value),
+            doctor_name: document.getElementById('configDoctor').value
+        };
+
+        const res = await fetch('/api/config/slots', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('🎉 Regra de horários salva!');
+            document.getElementById('formGradeOperacional').reset();
+            carregarConfiguracoesAgenda();
+        }
+    });
+
+    document.getElementById('formBloqueioAgenda').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            block_date: document.getElementById('blockDate').value,
+            reason: document.getElementById('blockReason').value
+        };
+
+        const res = await fetch('/api/config/block', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('🛑 Bloqueio preventivo ativado!');
+            document.getElementById('formBloqueioAgenda').reset();
+            carregarConfiguracoesAgenda();
+        }
+    });
+
+    async function carregarConfiguracoesAgenda() {
+        const res = await fetch('/api/config/active-rules', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        const tbodyRules = document.getElementById('tbodyRules');
+        const tbodyBlocks = document.getElementById('tbodyBlocks');
+        
+        tbodyRules.innerHTML = '';
+        tbodyBlocks.innerHTML = '';
+
+        if (data.success) {
+            data.slots.forEach(slot => {
+                tbodyRules.innerHTML += `
+                    <tr>
+                        <td><strong>${slot.specialty}</strong> ${slot.doctor_name ? `<br><small style="color:#64748b">(${slot.doctor_name})</small>` : ''}</td>
+                        <td>${diasSemana[slot.day_of_week]}</td>
+                        <td>${slot.start_time.slice(0,5)} até ${slot.end_time.slice(0,5)}</td>
+                        <td><span class="badge">${slot.interval_minutes} min</span></td>
+                        <td>
+                            <button class="btn-action btn-delete" onclick="excluirRegraGrade('${slot.id}')">Remover</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            data.blocks.forEach(b => {
+                const dataFormatada = new Date(b.block_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+                tbodyBlocks.innerHTML += `
+                    <tr>
+                        <td style="color:#dc2626; font-weight:bold">${dataFormatada}</td>
+                        <td><em>${b.reason}</em></td>
+                        <td>
+                            <button class="btn-action btn-delete" onclick="excluirBloqueio('${b.id}')">Liberar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    }
+
+    async function excluirRegraGrade(id) {
+        if(confirm('Deseja deletar esta grade de horários?')) {
+            await fetch(`/api/config/slots/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            carregarConfiguracoesAgenda();
+        }
+    }
+
+    async function excluirBloqueio(id) {
+        if(confirm('Deseja liberar a agenda para esta data novamente?')) {
+            await fetch(`/api/config/block/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            carregarConfiguracoesAgenda();
+        }
+    }
+
+    // ================= GERENCIAMENTO DE PERMISSÕES E ACESSOS REAIS =================
+    async function carregarPainelPermissoes() {
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/config/system-users', { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const data = await res.json();
+            
+            const tbodyEquipe = document.getElementById('tbodyEquipeSistema');
+            
+            if (!res.ok) {
+                console.error("💥 Servidor recusou a chamada de usuários:", data.message);
+                tbodyEquipe.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Erro de autenticação ao carregar equipe.</td></tr>';
+                return;
+            }
+            
+            if (data.success && data.users) {
+                tbodyEquipe.innerHTML = ''; 
+                
+                data.users.forEach(user => {
+                    const cargoLimpo = user.role ? user.role.toLowerCase().trim() : '';
+                    
+                    tbodyEquipe.innerHTML += `
+                        <tr>
+                            <td><strong>${user.name}</strong></td>
+                            <td><small style="color: #64748b;">${user.cpf || '---'}</small></td>
+                            <td><span class="badge">${cargoLimpo.toUpperCase()}</span></td>
+                            <td>
+                                <button class="btn-action btn-edit" onclick='prepararEdicaoFuncionario(${JSON.stringify(user)})'>Editar</button>
+                                <button class="btn-action btn-delete" onclick="excluirFuncionario('${user.id}', '${user.name}')">Deletar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (err) {
+            console.error('Erro ao popular painel de acessos:', err);
+        }
+    }
+
+    // ✏️ PREPARAR FORMULÁRIO PARA EDIÇÃO
+    function prepararEdicaoFuncionario(user) {
+        editFuncionarioId = user.id;
+        
+        document.getElementById('funcName').value = user.name;
+        document.getElementById('funcEmail').value = user.cpf;
+        document.getElementById('funcPassword').placeholder = "Deixe em branco para manter a atual";
+        document.getElementById('funcPassword').required = false; 
+        document.getElementById('funcRole').value = user.role;
+        
+        document.getElementById('tituloFormFuncionario').style.color = '#2563eb';
+        document.getElementById('tituloFormFuncionario').innerHTML = '<i class="fa-solid fa-user-pen"></i> Atualizar Funcionário';
+        
+        document.getElementById('btnSubmitFuncionario').style.background = '#2563eb';
+        document.getElementById('btnSubmitFuncionario').innerHTML = '<i class="fa-solid fa-user-pen"></i> Atualizar Funcionário';
+        document.getElementById('btnCancelarEdicaoFunc').style.display = 'block';
+    }
+
+    // ❌ CANCELAR EDIÇÃO E VOLTAR AO MODO CADASTRO
+    function cancelarEdicaoFuncionario() {
+        editFuncionarioId = null;
+        document.getElementById('formCadastrarFuncionario').reset();
+        document.getElementById('funcPassword').placeholder = "Senha inicial";
+        document.getElementById('funcPassword').required = true;
+
+        document.getElementById('tituloFormFuncionario').style.color = '#16a34a';
+        document.getElementById('tituloFormFuncionario').innerHTML = '<i class="fa-solid fa-user-plus"></i> Registrar Equipe';
+
+        document.getElementById('btnSubmitFuncionario').style.background = '#16a34a';
+        document.getElementById('btnSubmitFuncionario').innerHTML = '<i class="fa-solid fa-user-plus"></i> Matricular Funcionário';
+        document.getElementById('btnCancelarEdicaoFunc').style.display = 'none';
+    }
+
+    document.getElementById('formCadastrarFuncionario').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            name: document.getElementById('funcName').value,
+            email: document.getElementById('funcEmail').value,
+            role: document.getElementById('funcRole').value
+        };
+
+        const passwordValue = document.getElementById('funcPassword').value;
+        if (passwordValue) {
+            payload.password = passwordValue;
+        }
+
+        let url = 'http://127.0.0.1:5000/api/auth/cadastrar-funcionario';
+        let method = 'POST';
+
+        if (editFuncionarioId) {
+            url = `http://127.0.0.1:5000/api/auth/funcionario/${editFuncionarioId}`;
+            method = 'PUT';
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await res.json();
+            if (data.success) {
+                alert(editFuncionarioId ? '🎉 Dados da equipe atualizados com sucesso!' : '🎉 Novo funcionário matriculado com sucesso!');
+                cancelarEdicaoFuncionario();
+                carregarPainelPermissoes(); 
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro de comunicação com o servidor.');
+        }
+    });
+
+    // 🗑️ REMOVER FUNCIONÁRIO DO SISTEMA
+    async function excluirFuncionario(id, nome) {
+        if (confirm(`⚠️ ATENÇÃO: Deseja realmente remover o acesso de "${nome}" do sistema?\nEsta ação é irreversível!`)) {
+            try {
+                const res = await fetch(`http://127.0.0.1:5000/api/auth/funcionario/${id}`, { 
+                    method: 'DELETE', 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('🗑️ Funcionário desligado do sistema com sucesso!');
+                    carregarPainelPermissoes();
+                } else {
+                    alert('❌ Erro ao deletar: ' + data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erro de conexão ao tentar deletar.');
+            }
+        }
+    }
+
+    // ================= ESPECIALIDADES, EXAMES E PROFISSIONAIS MANTIDOS =================
+    document.getElementById('formSpecialty').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('specName').value;
+        const duration_minutes = document.getElementById('specDuration').value;
+
+        let url = '/api/catalog/specialties';
+        let method = 'POST';
+        
+        if (editSpecialtyId) {
+            url += `/${editSpecialtyId}`;
+            method = 'PUT';
+        }
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ name, duration_minutes })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('specName').value = '';
+            editSpecialtyId = null;
+            document.querySelector('#formSpecialty .btn-submit').innerText = 'Salvar Especialidade';
+            carregarEspecialidades();
+        } else {
+            alert(data.error || 'Erro ao processar requisição');
+        }
+    });
+
+    document.getElementById('formExamType').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('examName').value;
+        const duration_minutes = document.getElementById('examDuration').value;
+        const responsible_role = document.getElementById('examRole').value;
+
+        let url = '/api/catalog/exam-types';
+        let method = 'POST';
+
+        if (editExamTypeId) {
+            url += `/${editExamTypeId}`;
+            method = 'PUT';
+        }
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ name, duration_minutes, responsible_role })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('examName').value = '';
+            editExamTypeId = null;
+            document.querySelector('#formExamType .btn-submit').innerText = 'Salvar Tipo de Exame';
+            carregarExames();
+        } else {
+            alert(data.error || 'Erro ao processar requisição');
+        }
+    });
+
+    document.getElementById('formProfessional').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('profName').value;
+        const role = document.getElementById('profRole').value;
+        const specialties = Array.from(document.querySelectorAll('#containerSpecialtiesCheckboxes input:checked')).map(cb => cb.value);
+        const exams = Array.from(document.querySelectorAll('#containerExamsCheckboxes input:checked')).map(cb => cb.value);
+
+        let url = '/api/catalog/professionals';
+        let method = 'POST';
+        
+        if (editProfessionalId) {
+            url += `/${editProfessionalId}`;
+            method = 'PUT';
+        }
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ name, role, specialties, exams })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('profName').value = '';
+            document.querySelectorAll('.checkbox-group input:checked').forEach(cb => cb.checked = false);
+            editProfessionalId = null;
+            document.querySelector('#formProfessional .btn-submit').innerText = 'Salvar Profissional';
+            carregarProfissionais();
+        } else {
+            alert(data.error || 'Erro ao salvar profissional');
+        }
+    });
+
+    async function carregarEspecialidades() {
+        const res = await fetch('/api/catalog/specialties');
+        const data = await res.json();
+        const tbody = document.getElementById('tbodySpecialties');
+        const checkboxContainer = document.getElementById('containerSpecialtiesCheckboxes');
+        
+        tbody.innerHTML = '';
+        checkboxContainer.innerHTML = '';
+        
+        if (data.success) {
+            data.specialties.forEach(s => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${s.name}</strong></td>
+                        <td>${s.duration_minutes} minutos</td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick='prepararEdicaoEspecialidade(${JSON.stringify(s)})'>Editar</button>
+                            <button class="btn-action btn-delete" onclick="excluirEspecialidade('${s.id}')">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+                checkboxContainer.innerHTML += `<label class="checkbox-item"><input type="checkbox" value="${s.id}"> ${s.name}</label>`;
+            });
+        }
+    }
+
+    async function carregarExames() {
+        const res = await fetch('/api/catalog/exam-types');
+        const data = await res.json();
+        const tbody = document.getElementById('tbodyExams');
+        const checkboxContainer = document.getElementById('containerExamsCheckboxes');
+        
+        tbody.innerHTML = '';
+        checkboxContainer.innerHTML = '';
+        
+        if (data.success) {
+            data.examTypes.forEach(e => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${e.name}</strong></td>
+                        <td>${e.duration_minutes} min</td>
+                        <td><span class="badge">${e.responsible_role}</span></td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick='prepararEdicaoExame(${JSON.stringify(e)})'>Editar</button>
+                            <button class="btn-action btn-delete" onclick="excluirExame('${e.id}')">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+                checkboxContainer.innerHTML += `<label class="checkbox-item"><input type="checkbox" value="${e.id}"> ${e.name}</label>`;
+            });
+        }
+    }
+
+    async function carregarProfissionais() {
+        const res = await fetch('/api/catalog/professionals');
+        const data = await res.json();
+        const tbody = document.getElementById('tbodyProfessionals');
+        tbody.innerHTML = '';
+        
+        if (data.success) {
+            data.professionals.forEach(p => {
+                let vinculados = p.role === 'medico' ? p.specialties.join(', ') : p.exams.join(', ');
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td><span class="badge">${p.role}</span></td>
+                        <td style="color: #475569; font-size: 13px;">${vinculados || 'Nenhum vínculo'}</td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick='prepararEdicaoProfissional(${JSON.stringify(p)})'>Editar</button>
+                            <button class="btn-action btn-delete" onclick="excluirProfissional('${p.id}')">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    }
+</script>
+</body>
+</html>

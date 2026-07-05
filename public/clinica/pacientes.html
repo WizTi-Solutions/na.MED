@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão de Pacientes - na.MED</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #16a34a; padding-bottom: 10px; margin-bottom: 25px; }
+        .btn-back { text-decoration: none; background: #64748b; color: white; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        
+        .search-box { display: flex; gap: 10px; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .search-box input { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 15px; }
+        .search-box button { background: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px; }
+
+        .data-table { width: 100%; border-collapse: collapse; background: white; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        .data-table th { background: #f1f5f9; color: #475569; }
+        .badge { padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        
+        .btn-action { color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 5px; }
+        .btn-green { background: #16a34a; }
+        .btn-blue { background: #2563eb; }
+
+        /* MODAL DE FICHA COMPLETA */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-box { background: white; padding: 30px; border-radius: 8px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; }
+        .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .info-item label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; display: block; }
+        .info-item input, .info-item select { font-size: 14px; font-weight: bold; color: #1e293b; }
+        
+        .upload-section { margin-top: 20px; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <h2>👥 Cadastro Geral de Pacientes</h2>
+        <a href="dashboard.html" class="btn-back">← Voltar para a Agenda</a>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="inputBusca" placeholder="Pesquise por Nome Completo ou CPF...">
+        <button id="btnBuscar"><i class="fa-solid fa-magnifying-glass"></i> Buscar Paciente</button>
+    </div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>WhatsApp</th>
+                <th>Plano de Saúde</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="tbodyPacientes">
+            <tr><td colspan="5" style="text-align: center; color: #64748b;">Carregando base de dados...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="modal-overlay" id="modalPaciente">
+    <div class="modal-box">
+        <button class="modal-close" onclick="fecharModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin:0; color:#16a34a;" id="modalTitleName">Ficha do Paciente</h3>
+            <button id="btnAlternarEdicao" onclick="liberarEdicao()" class="btn-action btn-blue" style="margin:0; padding:6px 12px;"><i class="fa-solid fa-pen-to-square"></i> Editar Cadastro</button>
+        </div>
+        
+        <form id="formSalvarEdicaoRecepcao">
+            <input type="hidden" id="editPatientId">
+            <div class="info-grid">
+                <div class="info-item" style="grid-column: 1/-1;">
+                    <label>Nome Completo:</label>
+                    <input type="text" id="modalNameInput" disabled required style="width:95%; padding:6px; margin-top:3px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+                </div>
+                <div class="info-item" style="grid-column: 1/-1;">
+                    <label>Endereço Residencial:</label>
+                    <input type="text" id="modalAddressInput" disabled style="width:95%; padding:6px; margin-top:3px; border:1px solid #cbd5e1; border-radius:4px;">
+                </div>
+                <div class="info-item">
+                    <label>Telefone / WhatsApp:</label>
+                    <input type="text" id="modalPhoneInput" disabled style="width:90%; padding:6px; margin-top:3px; border:1px solid #cbd5e1; border-radius:4px;">
+                </div>
+                <div class="info-item">
+                    <label>Tipo Sanguíneo:</label>
+                    <select id="modalBloodInput" disabled style="width:95%; padding:6px; margin-top:3px; border:1px solid #cbd5e1; border-radius:4px;">
+                        <option value="">Não informado</option>
+                        <option value="A+">A+</option><option value="A-">A-</option>
+                        <option value="B+">B+</option><option value="B-">B-</option>
+                        <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                        <option value="O+">O+</option><option value="O-">O-</option>
+                    </select>
+                </div>
+                <div class="info-item">
+                    <label>Convênio Ativo:</label>
+                    <input type="text" id="modalInsuranceInput" disabled style="width:90%; padding:6px; margin-top:3px; border:1px solid #cbd5e1; border-radius:4px;">
+                </div>
+                <div class="info-item">
+                    <label>Nº Carteirinha:</label>
+                    <input type="text" id="modalCardInput" disabled style="width:90%; padding:6px; margin-top:3px; border:1px solid #cbd5e1; border-radius:4px;">
+                </div>
+                <!-- 🔑 CAMPO DE SENHA INSERIDO NA GRID DO MODAL -->
+                <div class="info-item" style="grid-column: 1/-1;">
+                    <label>Definir Nova Senha (Deixe vazio para não alterar):</label>
+                    <input type="password" id="modalPasswordInput" disabled placeholder="Digite uma nova senha para o paciente" style="width:95%; padding:6px; margin-top:3px; border:1px solid #cbd5e1; border-radius:4px;">
+                </div>
+            </div>
+            <button type="submit" id="btnSalvarEdicaoRecepcao" class="btn-action btn-green" style="width:100%; padding:10px; font-size:14px; display:none; margin-bottom:15px;"><i class="fa-solid fa-floppy-disk"></i> Salvar Alterações na Ficha</button>
+        </form>
+
+        <div class="upload-section" id="uploadSectionContainer">
+            <h4 style="margin: 0 0 10px 0; color:#1e293b;"><i class="fa-solid fa-file-pdf"></i> Histórico de Documentos do Paciente</h4>
+            <div id="listaDocumentosPaciente" style="margin-bottom: 20px; max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px;">
+                <span style="color: #64748b;">Carregando histórico de arquivos...</span>
+            </div>
+
+            <h4 style="margin: 0 0 10px 0; color:#1e293b; border-top: 1px dashed #cbd5e1; padding-top: 15px;"><i class="fa-solid fa-paperclip"></i> Anexar Novo Exame ou Laudo (PDF)</h4>
+            <form id="formUploadDoc">
+                <input type="hidden" id="uploadPatientId">
+                <div class="form-group" style="margin-bottom:10px; display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-size:12px; font-weight:bold; color:#475569;">Nome identificador do arquivo:</label>
+                    <input type="text" id="uploadFileName" placeholder="Ex: Hemograma Completo" required style="padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="file" id="uploadFileFile" accept="application/pdf" required style="font-size:13px;">
+                    <button type="submit" class="btn-action btn-green" style="padding:10px 15px;"><i class="fa-solid fa-cloud-arrow-up"></i> Injetar PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '../auth.html';
+
+    document.addEventListener('DOMContentLoaded', () => buscarPacientes());
+    document.getElementById('btnBuscar').addEventListener('click', () => buscarPacientes());
+    document.getElementById('inputBusca').addEventListener('keyup', (e) => { if (e.key === 'Enter') buscarPacientes(); });
+
+    // 🎯 FUNÇÃO DE PESQUISA COMPLETA
+    async function buscarPacientes() {
+        const termo = document.getElementById('inputBusca').value;
+        const tbody = document.getElementById('tbodyPacientes');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Consultando banco de dados...</td></tr>';
+
+        try {
+            const response = await fetch(`http://127.0.0.1:5000/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold;">❌ Erro: ${data.message || 'Sem permissão de acesso.'}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+
+            if (data.patients && data.patients.length > 0) {
+                data.patients.forEach(p => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${p.name}</strong></td>
+                            <td>${p.cpf || '---'}</td>
+                            <td>${p.phone || '<span style="color:#94a3b8">Não informado</span>'}</td>
+                            <td><span class="badge" style="background:#e0f2fe; color:#075985">${p.health_insurance_name || 'Particular'}</span></td>
+                            <td>
+                                <button class="btn-action btn-blue" onclick='abrirFicha(${JSON.stringify(p)})'><i class="fa-solid fa-folder-open"></i> Ficha & Anexos</button>
+                                <button class="btn-action btn-green" onclick="iniciarAgendamento('${p.id}', '${p.name}')"><i class="fa-solid fa-calendar-plus"></i> Agendar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold;">⚠️ Nenhum paciente encontrado com esse nome/CPF. (Lembre-se que contas Admin não aparecem aqui)</td></tr>';
+            }
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Erro na comunicação com o servidor.</td></tr>';
+        }
+    }
+
+    // 🎭 ABRIR FICHA - PREENCHENDO OS INPUTS COMO DESABILITADOS
+    function abrirFicha(p) {
+        document.getElementById('uploadPatientId').value = p.id;
+        document.getElementById('editPatientId').value = p.id;
+        
+        document.getElementById('modalTitleName').innerText = `👤 Ficha: ${p.name}`;
+        document.getElementById('modalNameInput').value = p.name || '';
+        document.getElementById('modalAddressInput').value = p.address || '';
+        document.getElementById('modalPhoneInput').value = p.phone || '';
+        document.getElementById('modalBloodInput').value = p.blood_type || '';
+        document.getElementById('modalInsuranceInput').value = p.health_insurance_name || '';
+        document.getElementById('modalCardInput').value = p.health_insurance_card || '';
+        
+        bloquearCampos();
+        document.getElementById('modalPaciente').style.display = 'flex';
+        
+        carregarDocumentos(p.id);
+    }
+
+    // 📂 BUSCAR ARQUIVOS JÁ ENVIADOS DO PACIENTE
+    async function carregarDocumentos(patientId) {
+        const container = document.getElementById('listaDocumentosPaciente');
+        container.innerHTML = '<span style="color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Vasculhando arquivos no servidor...</span>';
+
+        try {
+            const response = await fetch(`http://127.0.0.1:5000/api/appointments/patient-documents/${patientId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (data.success && data.documents && data.documents.length > 0) {
+                container.innerHTML = '<ul style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px;">';
+                data.documents.forEach(doc => {
+                    const dataEnvio = new Date(doc.uploaded_at).toLocaleDateString('pt-BR');
+                    container.innerHTML += `
+                        <li style="display:flex; justify-content: space-between; align-items:center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
+                            <span>📄 <strong>${doc.file_name}</strong> <small style="color:#64748b;">(Enviado em: ${dataEnvio})</small></span>
+                            <a href="http://127.0.0.1:5000${doc.file_path}" target="_blank" class="btn-action btn-blue" style="text-decoration:none; padding:4px 8px; font-size:11px;">
+                                <i class="fa-solid fa-eye"></i> Visualizar
+                            </a>
+                        </li>
+                    `;
+                });
+                container.innerHTML += '</ul>';
+            } else {
+                container.innerHTML = '<span style="color: #94a3b8;"><i class="fa-solid fa-circle-info"></i> Nenhum documento ou exame anexado a este prontuário.</span>';
+            }
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<span style="color: #dc2626;">❌ Erro ao carregar histórico de documentos.</span>';
+        }
+    }
+
+    // 💾 SALVAR ALTERAÇÕES VIA RECEPÇÃO (COM SUPORTE A NOVA SENHA)
+    document.getElementById('formSalvarEdicaoRecepcao').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editPatientId').value;
+
+        const payload = {
+            name: document.getElementById('modalNameInput').value,
+            phone: document.getElementById('modalPhoneInput').value,
+            address: document.getElementById('modalAddressInput').value,
+            blood_type: document.getElementById('modalBloodInput').value,
+            health_insurance_name: document.getElementById('modalInsuranceInput').value,
+            health_insurance_card: document.getElementById('modalCardInput').value,
+            target_user_id: id
+        };
+
+        const novaSenha = document.getElementById('modalPasswordInput').value;
+        if (novaSenha && novaSenha.trim() !== "") {
+            payload.password = novaSenha;
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/auth/update-profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('🎉 Prontuário e credenciais do paciente atualizados com sucesso!');
+                bloquearCampos();
+                fecharModal();
+                buscarPacientes();
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao conectar com o servidor.');
+        }
+    });
+
+    // 📄 EVENTO DE UPLOAD DO PDF
+    document.getElementById('formUploadDoc').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const patientId = document.getElementById('uploadPatientId').value;
+        const fileName = document.getElementById('uploadFileName').value;
+        const fileInput = document.getElementById('uploadFileFile').files[0];
+
+        const formData = new FormData();
+        formData.append('patient_id', patientId);
+        formData.append('file_name', fileName);
+        formData.append('laudo', fileInput);
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/appointments/upload-document', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert('🎉 Documento em PDF anexado com sucesso ao histórico do paciente!');
+                fecharModal();
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao enviar documento ao servidor.');
+        }
+    });
+
+    function iniciarAgendamento(id, nome) {
+        localStorage.setItem('selected_patient_id', id);
+        localStorage.setItem('selected_patient_name', nome);
+        window.location.href = 'dashboard.html';
+    }
+
+    function liberarEdicao() {
+        const inputs = ['modalNameInput', 'modalAddressInput', 'modalPhoneInput', 'modalBloodInput', 'modalInsuranceInput', 'modalCardInput', 'modalPasswordInput'];
+        inputs.forEach(id => document.getElementById(id).disabled = false);
+        
+        document.getElementById('btnSalvarEdicaoRecepcao').style.display = 'block';
+        document.getElementById('btnAlternarEdicao').style.display = 'none';
+        document.getElementById('uploadSectionContainer').style.display = 'none';
+    }
+
+    function bloquearCampos() {
+        const inputs = ['modalNameInput', 'modalAddressInput', 'modalPhoneInput', 'modalBloodInput', 'modalInsuranceInput', 'modalCardInput', 'modalPasswordInput'];
+        inputs.forEach(id => document.getElementById(id).disabled = true);
+        
+        document.getElementById('btnSalvarEdicaoRecepcao').style.display = 'none';
+        document.getElementById('btnAlternarEdicao').style.display = 'block';
+        document.getElementById('uploadSectionContainer').style.display = 'block';
+    }
+
+    function fecharModal() {
+        document.getElementById('modalPaciente').style.display = 'none';
+        document.getElementById('formUploadDoc').reset();
+        document.getElementById('formSalvarEdicaoRecepcao').reset();
+        document.getElementById('modalPasswordInput').value = '';
+    }
+</script>
+</body>
+</html>

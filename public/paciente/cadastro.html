@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Recepção - Cadastro Completo</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card-cadastro { background: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); width: 100%; max-width: 550px; }
+        .header-section { border-bottom: 2px solid #16a34a; padding-bottom: 12px; margin-bottom: 20px; }
+        .header-section h2 { margin: 0; color: #1e293b; font-size: 22px; }
+        .section-title { font-size: 14px; font-weight: bold; color: #16a34a; margin: 20px 0 10px 0; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; text-transform: uppercase; }
+        .form-row { display: flex; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; flex: 1; }
+        .form-group label { font-size: 13px; font-weight: bold; color: #475569; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; box-sizing: border-box; width: 100%; }
+        .form-group input:focus, .form-group select:focus { border-color: #16a34a; outline: none; }
+        .btn-submit { background: #16a34a; color: white; border: none; padding: 14px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 15px; }
+        .btn-submit:hover { background: #15803d; }
+        .nav-link { display: block; text-align: center; margin-top: 20px; color: #64748b; font-size: 13px; text-decoration: none; }
+        .nav-link:hover { color: #16a34a; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="card-cadastro">
+    <div class="header-section">
+        <h2>👥 Módulo Recepção</h2>
+    </div>
+    
+    <form id="formCadastrarPaciente">
+        <!-- SEÇÃO 1: ACESSO -->
+        <div class="section-title">🔒 Credenciais de Acesso</div>
+        <div class="form-group">
+            <label for="patientName">Nome Completo:</label>
+            <input type="text" id="patientName" placeholder="Ex: João da Silva" required>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="patientEmail">CPF (Apenas números):</label>
+                <input type="text" id="patientEmail" placeholder="Ex: 12345678902" required maxlength="11">
+            </div>
+            <div class="form-group">
+                <label for="patientPassword">Senha Provisória:</label>
+                <input type="password" id="patientPassword" placeholder="Mín. 6 dígitos" required minlength="6">
+            </div>
+        </div>
+
+        <!-- SEÇÃO 2: CONTATO -->
+        <div class="section-title">📞 Contato e Endereço</div>
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label for="patientPhone">Telefone / WhatsApp:</label>
+                <input type="text" id="patientPhone" placeholder="(34) 99999-9999">
+            </div>
+            <div class="form-group" style="flex: 2;">
+                <label for="patientAddress">Endereço Residencial:</label>
+                <input type="text" id="patientAddress" placeholder="Rua, Número, Bairro">
+            </div>
+        </div>
+
+        <!-- SEÇÃO 3: DADOS MÉDICOS -->
+        <div class="section-title">🩺 Ficha Médica e Convênio</div>
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label for="patientBlood">Tipo Sanguíneo:</label>
+                <select id="patientBlood">
+                    <option value="">Não informado</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex: 2;">
+                <label for="insuranceName">Plano de Saúde / Convênio:</label>
+                <input type="text" id="insuranceName" placeholder="Ex: Unimed, Bradesco (Se houver)">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="insuranceCard">Número da Carteirinha do Plano:</label>
+            <input type="text" id="insuranceCard" placeholder="Número do cartão do convênio">
+        </div>
+
+        <button type="submit" class="btn-submit">💾 Concluir Cadastro Completo</button>
+    </form>
+
+    <a href="../clinica/dashboard.html" class="nav-link">← Voltar para a Agenda da Clínica</a>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Acesso restrito!');
+        window.location.href = '../auth.html';
+    }
+
+    document.getElementById('formCadastrarPaciente').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Mapeando todas as novas variáveis
+        const bodyData = {
+            name: document.getElementById('patientName').value,
+            email: document.getElementById('patientEmail').value,
+            password: document.getElementById('patientPassword').value,
+            phone: document.getElementById('patientPhone').value,
+            address: document.getElementById('patientAddress').value,
+            blood_type: document.getElementById('patientBlood').value,
+            health_insurance_name: document.getElementById('insuranceName').value,
+            health_insurance_card: document.getElementById('insuranceCard').value
+        };
+
+        try {
+            const response = await fetch('/api/auth/cadastrar-paciente', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(bodyData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`🎉 Paciente cadastrado com sucesso completo no banco!`);
+                document.getElementById('formCadastrarPaciente').reset();
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Erro de comunicação.');
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Minha Conta - na.MED</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card-cadastro { background: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); width: 100%; max-width: 550px; }
+        .header-section { border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; text-align: center; }
+        .header-section h2 { margin: 0; color: #1e293b; font-size: 24px; }
+        .header-section p { margin: 5px 0 0 0; color: #64748b; font-size: 14px; }
+        .section-title { font-size: 13px; font-weight: bold; color: #2563eb; margin: 25px 0 10px 0; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; text-transform: uppercase; }
+        .form-row { display: flex; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; flex: 1; }
+        .form-group label { font-size: 13px; font-weight: bold; color: #475569; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; box-sizing: border-box; width: 100%; }
+        .form-group input:focus, .form-group select:focus { border-color: #2563eb; outline: none; }
+        .btn-submit { background: #2563eb; color: white; border: none; padding: 14px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 15px; transition: background 0.2s; }
+        .btn-submit:hover { background: #1d4ed8; }
+        .nav-link { display: block; text-align: center; margin-top: 20px; color: #64748b; font-size: 13px; text-decoration: none; }
+        .nav-link:hover { color: #2563eb; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="card-cadastro">
+    <div class="header-section">
+        <h2>👤 Criar Minha Conta na.MED</h2>
+        <p>Cadastre-se rapidinho para agendar suas consultas e exames</p>
+    </div>
+    
+    <form id="formAutoCadastroPaciente">
+        <!-- SEÇÃO 1: ACESSO -->
+        <div class="section-title">🔒 Credenciais de Acesso</div>
+        <div class="form-group">
+            <label>Nome Completo:</label>
+            <input type="text" id="patientName" placeholder="Digite seu nome completo" required>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>CPF (Seu Login de Acesso):</label>
+                <input type="text" id="patientCpf" placeholder="Apenas os 11 números" required maxlength="11">
+            </div>
+            <div class="form-group">
+                <label>Crie uma Senha:</label>
+                <input type="password" id="patientPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+            </div>
+        </div>
+
+        <!-- SEÇÃO 2: CONTATO -->
+        <div class="section-title">📞 Contato e Endereço</div>
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label>WhatsApp / Telefone:</label>
+                <input type="text" id="patientPhone" placeholder="Ex: 34999999999">
+            </div>
+            <div class="form-group" style="flex: 2;">
+                <label>Endereço Residencial:</label>
+                <input type="text" id="patientAddress" placeholder="Rua, Número, Bairro, Cidade">
+            </div>
+        </div>
+
+        <!-- SEÇÃO 3: DADOS MÉDICOS -->
+        <div class="section-title">🩺 Ficha Médica e Convênio (Opcional)</div>
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label>Tipo Sanguíneo:</label>
+                <select id="patientBlood">
+                    <option value="">Não sei / Nenhum</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex: 2;">
+                <label>Plano de Saúde / Convênio:</label>
+                <input type="text" id="insuranceName" placeholder="Ex: Unimed, Bradesco (Se tiver)">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Número da Carteirinha do Convênio:</label>
+            <input type="text" id="insuranceCard" placeholder="Digite o número do cartão do plano">
+        </div>
+
+        <button type="submit" class="btn-submit"><i class="fa-solid fa-user-check"></i> Concluir Meu Cadastro e Agendar</button>
+    </form>
+
+    <a href="/auth.html" class="nav-link">Já tem uma conta? Clique aqui para fazer Login</a>
+</div>
+
+<script>
+    document.getElementById('formAutoCadastroPaciente').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const bodyData = {
+            name: document.getElementById('patientName').value,
+            email: document.getElementById('patientCpf').value, // Envia o CPF para o campo email do banco
+            password: document.getElementById('patientPassword').value,
+            phone: document.getElementById('patientPhone').value,
+            address: document.getElementById('patientAddress').value,
+            blood_type: document.getElementById('patientBlood').value,
+            health_insurance_name: document.getElementById('insuranceName').value,
+            health_insurance_card: document.getElementById('insuranceCard').value
+        };
+
+        try {
+            // Requisição absoluta para a rota pública do backend
+            const response = await fetch('http://127.0.0.1:5000/api/auth/cadastrar-paciente-site', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`🎉 Cadastro concluído com sucesso, ${bodyData.name}!\nClique em OK para realizar seu login.`);
+                window.location.href = '/auth.html';
+            } else {
+                alert('❌ Erro no cadastro: ' + data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Erro de conexão com o servidor da clínica.');
+        }
+    });
+</script>
+</body>
+</html>
