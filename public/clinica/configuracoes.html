@@ -477,7 +477,7 @@
     // ================= GERENCIAMENTO DE PERMISSÕES E ACESSOS REAIS =================
     async function carregarPainelPermissoes() {
         try {
-            const res = await fetch('http://127.0.0.1:5000/api/config/system-users', { 
+            const res = await fetch('http:///api/server//api/config/system-users', { 
                 headers: { 'Authorization': `Bearer ${token}` } 
             });
             const data = await res.json();
@@ -561,11 +561,11 @@
             payload.password = passwordValue;
         }
 
-        let url = 'http://127.0.0.1:5000/api/auth/cadastrar-funcionario';
+        let url = 'http:///api/server//api/auth/cadastrar-funcionario';
         let method = 'POST';
 
         if (editFuncionarioId) {
-            url = `http://127.0.0.1:5000/api/auth/funcionario/${editFuncionarioId}`;
+            url = `http:///api/server//api/auth/funcionario/${editFuncionarioId}`;
             method = 'PUT';
         }
 
@@ -594,7 +594,7 @@
     async function excluirFuncionario(id, nome) {
         if (confirm(`⚠️ ATENÇÃO: Deseja realmente remover o acesso de "${nome}" do sistema?\nEsta ação é irreversível!`)) {
             try {
-                const res = await fetch(`http://127.0.0.1:5000/api/auth/funcionario/${id}`, { 
+                const res = await fetch(`http:///api/server//api/auth/funcionario/${id}`, { 
                     method: 'DELETE', 
                     headers: { 'Authorization': `Bearer ${token}` } 
                 });
