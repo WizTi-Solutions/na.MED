@@ -482,41 +482,54 @@ async function salvarAgendamentoRapido() {
 const inputBusca = document.getElementById('campoBuscaPaciente');
 const listaResultados = document.getElementById('listaResultados');
 
-inputBusca.addEventListener('input', async (e) => {
-    const termo = e.target.value.trim();
-    if (termo.length < 3) {
-        listaResultados.style.display = 'none';
-        return;
-    }
+if (inputBusca) {
+    inputBusca.addEventListener('input', async (e) => {
+        const termo = e.target.value.trim(); // Faltava capturar o termo!
 
-    const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
+        // Se tiver menos de 3 letras, esconde a lista e para por aqui
+        if (termo.length < 3) {
+            listaResultados.style.display = 'none';
+            return;
+        }
 
-    if (data.success && data.patients.length > 0) {
-        listaResultados.innerHTML = '';
-        data.patients.forEach(p => {
-            const div = document.createElement('div');
-            div.style.padding = '10px';
-            div.style.cursor = 'pointer';
-            div.innerText = `${p.name} (${p.email})`; // Mostra nome e CPF/Email
-            div.onmouseover = () => div.style.background = '#f1f5f9';
-            div.onmouseout = () => div.style.background = 'white';
-            div.onclick = () => {
-                inputBusca.value = p.name; // Preenche o nome
-                inputBusca.dataset.id = p.id; // Guarda o ID oculto
+        try {
+            const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.success && data.patients.length > 0) {
+                listaResultados.innerHTML = '';
+                data.patients.forEach(p => {
+                    const div = document.createElement('div');
+                    div.style.padding = '15px'; // Aumentei um pouco para facilitar o clique no celular
+                    div.style.cursor = 'pointer';
+                    div.style.borderBottom = '1px solid #f1f5f9';
+                    div.innerText = `${p.name} (${p.email})`; 
+                    
+                    div.onmouseover = () => div.style.background = '#f1f5f9';
+                    div.onmouseout = () => div.style.background = 'white';
+                    
+                    // Ação de clique para mobile e PC
+                    div.onclick = () => {
+                        inputBusca.value = p.name; // Preenche o nome
+                        inputBusca.dataset.id = p.id; // Guarda o ID oculto
+                        listaResultados.style.display = 'none'; // Esconde a lista
+                    };
+                    
+                    listaResultados.appendChild(div);
+                });
+                listaResultados.style.display = 'block';
+            } else {
                 listaResultados.style.display = 'none';
-            };
-            listaResultados.appendChild(div);
-        });
-        listaResultados.style.display = 'block';
-    } else {
-        listaResultados.style.display = 'none';
-    }
-});
-
+            }
+        } catch (erro) {
+            console.error("Erro ao buscar paciente:", erro);
+        }
+    });
+}
 </script>
+<!-- O MODAL CORRETO E ÚNICO -->
 <div id="seuModalId" class="modal-overlay" style="display: none;">
     <div class="modal-content">
         <span class="close-modal" onclick="document.getElementById('seuModalId').style.display='none'">&times;</span>
@@ -524,34 +537,22 @@ inputBusca.addEventListener('input', async (e) => {
         
         <div class="form-group">
             <label>Horário Selecionado:</label>
-            <input type="text" id="campoHorario" readonly style="background:#f1f5f9;">
+            <input type="text" id="campoHorario" readonly style="background:#f1f5f9; padding:10px; border:1px solid #cbd5e1; border-radius:4px; width:100%;">
         </div>
 
-        <div class="form-group">
+        <div class="form-group" style="position: relative; margin-top: 15px;">
             <label>Buscar Paciente (Nome ou CPF):</label>
-            <input type="text" id="campoBuscaPaciente" placeholder="Digite o nome do paciente..." 
-                   style="padding:10px; border:1px solid #cbd5e1; border-radius:4px;">
+            <input type="text" id="campoBuscaPaciente" placeholder="Digite o nome ou CPF..." autocomplete="off" style="padding:10px; border:1px solid #cbd5e1; border-radius:4px; width:100%; box-sizing: border-box;">
+            <!-- A lista de resultados -->
+            <div id="listaResultados" style="position:absolute; width:100%; background:white; border:1px solid #cbd5e1; z-index:9999; display:none; max-height:200px; overflow-y:auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
         </div>
 
-        <button onclick="salvarAgendamentoRapido()" 
-                style="background:#16a34a; color:white; border:none; padding:12px; width:100%; border-radius:4px; font-weight:bold; cursor:pointer;">
+        <button onclick="salvarAgendamentoRapido()" style="background:#16a34a; color:white; border:none; padding:12px; width:100%; border-radius:4px; font-weight:bold; cursor:pointer; margin-top: 20px;">
             Confirmar Agendamento
         </button>
-    </div>
- <div class="form-group" style="position: relative;">
-    <label>Buscar Paciente (Nome ou CPF):</label>
-    <input type="text" id="campoBuscaPaciente" placeholder="Digite o nome ou CPF..." 
-           autocomplete="off" style="padding:10px; border:1px solid #cbd5e1; border-radius:4px; width:100%;">
-    <!-- A lista de resultados deve ficar DENTRO da mesma div do input -->
-    <div id="listaResultados" style="position:absolute; width:100%; background:white; border:1px solid #cbd5e1; z-index:1000; display:none; max-height:200px; overflow-y:auto;"></div>
-</div>
-
-<button onclick="salvarAgendamentoRapido()" 
-        style="background:#16a34a; color:white; border:none; padding:12px; width:100%; border-radius:4px; font-weight:bold; cursor:pointer; margin-top: 15px;">
-    Confirmar Agendamento
-</button>
-</div> <!-- Fecha a modal-content -->
+    </div> <!-- Fecha a modal-content -->
 </div> <!-- Fecha a modal-overlay -->
 
 </body>
+</html>
 </html>
