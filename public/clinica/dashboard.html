@@ -479,56 +479,55 @@ async function salvarAgendamentoRapido() {
     }
 }
 
-const inputBusca = document.getElementById('campoBuscaPaciente');
-const listaResultados = document.getElementById('listaResultados');
+document.addEventListener('DOMContentLoaded', async () => {
+    await carregarCatalogosIniciais();
+    alternarSelectDinamico();
+    await carregarConsultasClinica();
 
-if (inputBusca) {
-    inputBusca.addEventListener('input', async (e) => {
-        const termo = e.target.value.trim(); // Faltava capturar o termo!
+    const inputBusca = document.getElementById('campoBuscaPaciente');
+    const listaResultados = document.getElementById('listaResultados');
 
-        // Se tiver menos de 3 letras, esconde a lista e para por aqui
-        if (termo.length < 3) {
-            listaResultados.style.display = 'none';
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-
-            if (data.success && data.patients.length > 0) {
-                listaResultados.innerHTML = '';
-                data.patients.forEach(p => {
-                    const div = document.createElement('div');
-                    div.style.padding = '15px'; // Aumentei um pouco para facilitar o clique no celular
-                    div.style.cursor = 'pointer';
-                    div.style.borderBottom = '1px solid #f1f5f9';
-                    div.innerText = `${p.name} (${p.email})`; 
-                    
-                    div.onmouseover = () => div.style.background = '#f1f5f9';
-                    div.onmouseout = () => div.style.background = 'white';
-                    
-                    // Ação de clique para mobile e PC
-                    div.onclick = () => {
-                        inputBusca.value = p.name; // Preenche o nome
-                        inputBusca.dataset.id = p.id; // Guarda o ID oculto
-                        listaResultados.style.display = 'none'; // Esconde a lista
-                    };
-                    
-                    listaResultados.appendChild(div);
-                });
-                listaResultados.style.display = 'block';
-            } else {
+    if (inputBusca) {
+        inputBusca.addEventListener('input', async (e) => {
+            const termo = e.target.value.trim();
+            if (termo.length < 3) {
                 listaResultados.style.display = 'none';
+                return;
             }
-        } catch (erro) {
-            console.error("Erro ao buscar paciente:", erro);
-        }
-    });
-}
+
+            try {
+                const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success && data.patients.length > 0) {
+                    listaResultados.innerHTML = '';
+                    data.patients.forEach(p => {
+                        const div = document.createElement('div');
+                        div.style.padding = '15px';
+                        div.style.cursor = 'pointer';
+                        div.style.borderBottom = '1px solid #eee';
+                        div.innerText = p.name;
+                        div.onclick = () => {
+                            inputBusca.value = p.name;
+                            inputBusca.dataset.id = p.id;
+                            listaResultados.style.display = 'none';
+                        };
+                        listaResultados.appendChild(div);
+                    });
+                    listaResultados.style.display = 'block';
+                } else {
+                    listaResultados.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("Erro na busca:", err);
+            }
+        });
+    }
+});
 </script>
+
 <!-- O MODAL CORRETO E ÚNICO -->
 <div id="seuModalId" class="modal-overlay" style="display: none;">
     <div class="modal-content">
@@ -554,5 +553,4 @@ if (inputBusca) {
 </div> <!-- Fecha a modal-overlay -->
 
 </body>
-</html>
 </html>
