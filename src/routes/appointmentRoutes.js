@@ -8,14 +8,14 @@ const verificarPermissao = require('../middlewares/roleMiddleware');
 // 📑 1. HISTÓRICO DO PACIENTE (Apenas uma rota, protegida)
 router.get('/my-appointments', verificarToken, async (req, res) => {
     try {
-        const patientId = req.user.id; 
+        const patient_id = req.user.id; 
         const query = `
             SELECT id, doctor_name, specialty, appointment_date, status 
             FROM appointments 
             WHERE patient_id = $1 
             ORDER BY appointment_date DESC
         `;
-        const { rows } = await db.query(query, [patientId]);
+        const { rows } = await db.query(query, [patient_id]);
         res.json({ success: true, appointments: rows });
     } catch (err) {
         console.error('Erro no histórico:', err.message);
@@ -44,37 +44,41 @@ router.get('/my-documents', verificarToken, async (req, res) => {
     }
 });
 
-// ➕ CRIAR NOVO AGENDAMENTO (Alinhado com a Dashboard do Paciente)
+// ➕ CRIAR NOVO AGENDAMENTO (Corrigido)
 router.post('/', verificarToken, async (req, res) => {
     try {
-        const patientId = req.user.id; // Captura o UUID do token gerado no login
-        const { doctor_name, specialty, appointment_date } = req.body;
+        const { patient_id, doctor_name, specialty, appointment_date } = req.body;
 
-        if (!doctor_name || !specialty || !appointment_date) {
+        // 🛡️ Validações
+        if (!patient_id || !doctor_name || !specialty || !appointment_date) {
             return res.status(400).json({ success: false, message: 'Campos obrigatórios ausentes.' });
         }
 
-        // 🛡️ TRAVA DE SEGURANÇA: Confere se o profissional selecionado já tem um agendamento ativo nesse exato horário
+        // 🛡️ Segurança: Admin não pode ser o paciente
+        if (patient_id === req.user.id && req.user.role === 'admin') {
+            return res.status(403).json({ success: false, message: 'O admin não pode ser o paciente!' });
+        }
+
+        // 🛡️ Trava de duplicidade
         const checkQuery = `
             SELECT id FROM appointments 
-            WHERE doctor_name = $1 
-              AND appointment_date = $2 
-              AND status != 'Cancelado'
+            WHERE doctor_name = $1 AND appointment_date = $2 AND status != 'Cancelado'
         `;
         const checkRes = await db.query(checkQuery, [doctor_name, appointment_date]);
 
         if (checkRes.rows.length > 0) {
-            return res.status(400).json({ success: false, message: 'Este horário acabou de ser preenchido. Escolha outro slot!' });
+            return res.status(400).json({ success: false, message: 'Este horário já está ocupado.' });
         }
 
-        // Realiza a inserção normal se o slot estiver vago
+        // 🚀 Inserção Correta (Agora usando a variável patient_id)
         const insertQuery = `
             INSERT INTO appointments (patient_id, doctor_name, specialty, appointment_date, status)
             VALUES ($1, $2, $3, $4, 'Agendado')
             RETURNING *
         `;
         
-        const { rows } = await db.query(insertQuery, [patientId, doctor_name, specialty, appointment_date]);
+        // Aqui o patient_id está correto agora!
+        const { rows } = await db.query(insertQuery, [patient_id, doctor_name, specialty, appointment_date]);
         
         res.json({ success: true, appointment: rows[0] });
 
