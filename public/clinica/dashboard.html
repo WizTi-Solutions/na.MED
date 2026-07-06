@@ -432,25 +432,23 @@ consultasFiltradas.forEach(app => {
 }
 
 async function salvarAgendamentoRapido() {
-    const inputBusca = document.getElementById('campoBuscaPaciente');
-    const pacienteId = inputBusca.dataset.id; // Pega o ID que salvamos no clique!
-    const horario = document.getElementById('campoHorario').value;
+        const inputBusca = document.getElementById('campoBuscaPaciente');
+        const pacienteId = inputBusca.dataset.id; // Pega o ID que foi salvo no clique!
+        const horario = document.getElementById('campoHorario').value;
+        const dataBase = document.getElementById('filterDate').value;
 
-    if (!pacienteId) {
-        alert("Selecione um paciente da lista clicando sobre o nome dele!");
-        return;
-    }
+        if (!pacienteId) {
+            alert("Por favor, selecione um paciente da lista!");
+            return;
+        }
 
-    // Monta o agendamento usando o ID que já está na memória do input
-    const payload = {
-        patient_id: pacienteId, // ID correto do paciente selecionado
-        doctor_name: document.getElementById('filterDynamic').value,
-        specialty: document.getElementById('filterType').value === 'medico' ? 'Consulta' : 'Exame',
-        appointment_date: `${document.getElementById('filterDate').value}T${horario}:00`
-    };
+        const payload = {
+            patient_id: pacienteId,
+            doctor_name: document.getElementById('filterDynamic').value,
+            specialty: document.getElementById('filterType').value === 'medico' ? 'Consulta' : 'Exame',
+            appointment_date: `${dataBase}T${horario}:00`
+        };
 
-    // Salva no servidor
-    try {
         const resAgendar = await fetch('/api/appointments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -461,33 +459,26 @@ async function salvarAgendamentoRapido() {
         if (dataAgendar.success) {
             alert("Agendamento realizado com sucesso!");
             document.getElementById('seuModalId').style.display = 'none';
-            // Limpa o campo para o próximo
             inputBusca.value = '';
             inputBusca.dataset.id = '';
             carregarConsultasClinica();
         } else {
-            alert("Erro ao salvar: " + dataAgendar.message);
+            alert("Erro: " + dataAgendar.message);
         }
-    } catch (err) {
-        console.error("Erro na requisição:", err);
     }
-}
+
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await carregarCatalogosIniciais();
-    alternarSelectDinamico();
-    await carregarConsultasClinica();
+        await carregarCatalogosIniciais();
+        alternarSelectDinamico();
+        await carregarConsultasClinica();
 
-    const inputBusca = document.getElementById('campoBuscaPaciente');
-    const listaResultados = document.getElementById('listaResultados');
+        const inputBusca = document.getElementById('campoBuscaPaciente');
+        const listaResultados = document.getElementById('listaResultados');
 
-    if (inputBusca) {
         inputBusca.addEventListener('input', async (e) => {
             const termo = e.target.value.trim();
-            if (termo.length < 3) {
-                listaResultados.style.display = 'none';
-                return;
-            }
+            if (termo.length < 3) { listaResultados.style.display = 'none'; return; }
 
             try {
                 const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termo)}`, {
@@ -505,21 +496,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         div.innerText = p.name;
                         div.onclick = () => {
                             inputBusca.value = p.name;
-                            inputBusca.dataset.id = p.id;
+                            inputBusca.dataset.id = p.id; // Salva o ID corretamente no dataset
                             listaResultados.style.display = 'none';
                         };
                         listaResultados.appendChild(div);
                     });
                     listaResultados.style.display = 'block';
-                } else {
-                    listaResultados.style.display = 'none';
                 }
-            } catch (err) {
-                console.error("Erro na busca:", err);
-            }
+            } catch (err) { console.error(err); }
         });
-    }
-});
+    });
 </script>
 
 <!-- O MODAL CORRETO E ÚNICO -->
