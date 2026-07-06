@@ -503,11 +503,14 @@ inputBusca.addEventListener('input', async (e) => {
             div.innerText = `${p.name} (${p.email})`; // Mostra nome e CPF/Email
             div.onmouseover = () => div.style.background = '#f1f5f9';
             div.onmouseout = () => div.style.background = 'white';
-            div.onclick = () => {
-                inputBusca.value = p.name; // Preenche o nome
-                inputBusca.dataset.id = p.id; // Guarda o ID oculto
-                listaResultados.style.display = 'none';
-            };
+            // Dentro do seu evento 'input' para campoBuscaPaciente
+div.onclick = () => {
+    inputBusca.value = p.name;
+    inputBusca.dataset.id = p.id; // Esta linha é a mais importante!
+    console.log("ID do paciente definido:", inputBusca.dataset.id); // Ajuda a ver no console do navegador
+    listaResultados.style.display = 'none';
+};
+
             listaResultados.appendChild(div);
         });
         listaResultados.style.display = 'block';
