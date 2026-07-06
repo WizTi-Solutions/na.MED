@@ -432,50 +432,44 @@ consultasFiltradas.forEach(app => {
 }
 
 async function salvarAgendamentoRapido() {
-    const termoBusca = document.getElementById('campoBuscaPaciente').value.trim();
+    const inputBusca = document.getElementById('campoBuscaPaciente');
+    const pacienteId = inputBusca.dataset.id; // Pega o ID que salvamos no clique!
     const horario = document.getElementById('campoHorario').value;
-    const pacienteId = document.getElementById('campoBuscaPaciente').dataset.id;
 
     if (!pacienteId) {
-        alert("Selecione um paciente da lista!");
-        return;
-    }
-    
-    // 1. Busca o paciente (que agora sabemos que funciona, pois o status é 200)
-    const res = await fetch(`/api/auth/pesquisar-pacientes?busca=${encodeURIComponent(termoBusca)}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-
-    if (!data.success || data.patients.length === 0) {
-        alert("Paciente não encontrado!");
+        alert("Selecione um paciente da lista clicando sobre o nome dele!");
         return;
     }
 
-    const paciente = data.patients[0]; // Pega o paciente retornado
-
-    // 2. Monta o agendamento
+    // Monta o agendamento usando o ID que já está na memória do input
     const payload = {
-        patient_id: paciente.id,
+        patient_id: pacienteId, // ID correto do paciente selecionado
         doctor_name: document.getElementById('filterDynamic').value,
         specialty: document.getElementById('filterType').value === 'medico' ? 'Consulta' : 'Exame',
         appointment_date: `${document.getElementById('filterDate').value}T${horario}:00`
     };
 
-    // 3. Salva no servidor
-    const resAgendar = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-    });
+    // Salva no servidor
+    try {
+        const resAgendar = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
 
-    const dataAgendar = await resAgendar.json();
-    if (dataAgendar.success) {
-        alert("Agendamento realizado com sucesso para " + paciente.name + "!");
-        document.getElementById('seuModalId').style.display = 'none';
-        carregarConsultasClinica(); // Atualiza a grade com o novo agendamento
-    } else {
-        alert("Erro ao salvar: " + dataAgendar.message);
+        const dataAgendar = await resAgendar.json();
+        if (dataAgendar.success) {
+            alert("Agendamento realizado com sucesso!");
+            document.getElementById('seuModalId').style.display = 'none';
+            // Limpa o campo para o próximo
+            inputBusca.value = '';
+            inputBusca.dataset.id = '';
+            carregarConsultasClinica();
+        } else {
+            alert("Erro ao salvar: " + dataAgendar.message);
+        }
+    } catch (err) {
+        console.error("Erro na requisição:", err);
     }
 }
 
